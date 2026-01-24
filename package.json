@@ -1,13 +1,33 @@
 {
-  "name": "@decaf-ts/ts-workspace",
-  "version": "3.9.7",
-  "description": "template for ts projects",
+  "name": "@decaf-ts/crypto",
+  "version": "0.0.1",
+  "description": "decaf-ts crypto wrappers",
   "type": "module",
   "exports": {
-    "require": "./lib/index.cjs",
-    "import": "./lib/esm/index.js"
+    "./browser": {
+      "require": "./lib/browser/index.cjs",
+      "import": "./lib/esm/browser/index.js",
+      "types": "./lib/browser/index.d.ts"
+    },
+    "./node": {
+      "require": "./lib/node/index.cjs",
+      "import": "./lib/esm/node/index.js",
+      "types": "./lib/node/index.d.ts"
+    },
+    "./jwt": {
+      "require": "./lib/jwt/index.cjs",
+      "import": "./lib/esm/jtw/index.js",
+      "types": "./lib/jtw/index.d.ts"
+    }
+    "./common": {
+      "require": "./lib/common/index.cjs",
+      "import": "./lib/esm/common/index.js",
+      "types": "./lib/common/index.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
+  "main": "lib/index.cjs",
+  "browser": "lib/esm/browser/index.js",
   "scripts": {
     "do-install": "NPM_TOKEN=$(cat .npmtoken) npm install",
     "update-dependencies": "PREFIX=\"decaf-ts\"; npm ls | grep \"$PREFIX\" | awk -F/ '{print $NF}' | sed 's/@.*//' | xargs -I package npm update @\"$PREFIX\"/package",
@@ -88,5 +108,8 @@
   "homepage": "https://github.com/decaf-ts/ts-workspace#readme",
   "devDependencies": {
     "@decaf-ts/utils": "latest"
+  },
+  "dependencies": {
+    "jose": "^6.1.3"
   }
 }
