@@ -12,28 +12,21 @@
   "package": "package.json",
   "recurseDepth": 10,
   "source": {
-    "include": [
-      "./src"
-    ],
-    "exclude": [
-      "cli.(ts|js)"
-    ],
+    "include": ["./src"],
+    "exclude": ["cli.(ts|js)"],
     "includePattern": "\\.(jsx|js|ts|tsx)$"
   },
   "tags": {
     "allowUnknownTags": true,
-    "dictionaries": [
-      "jsdoc",
-      "closure"
-    ]
+    "dictionaries": ["jsdoc", "closure"]
   },
   "templates": {
     "default": {
       "useLongnameInNav": false
     },
     "better-docs": {
-      "name": "ts-template",
-      "title": "TypeScript workspace template",
+      "name": "crypto",
+      "title": "@decaf-ts/crypto",
       "hideGenerator": true,
       "useLongnameInNav": false,
       "navLinks": [
@@ -47,7 +40,7 @@
         },
         {
           "label": "Github Repository",
-          "href": "https://github.com/decaf-ts/ts-workspace#readme"
+          "href": "https://github.com/decaf-ts/crypto#readme"
         },
         {
           "label": "Github Profile",

@@ -1,6 +1,6 @@
 ### Description
 
-No one needs the hassle of setting up new repos every time.
+simple wrappers around Crypto and SubtleCrypto (browser resilient).
 
-Now you can create new repositories from this template and enjoy having everything set up for you.
+and optional integration with the @decaf-ts framework
 

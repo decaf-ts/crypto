@@ -1,3 +1,10 @@
+import { HkdfParams, Pbkdf2Params } from "./pbkdf2-types";
+import {
+  AlgorithmIdentifier,
+  BufferSource,
+  KeyFormat,
+  KeyUsage,
+} from "./util-types";
 import {
   AesCbcParams,
   AesCtrParams,
@@ -6,32 +13,41 @@ import {
   AesKeyAlgorithm,
   AesKeyGenParams,
 } from "./aes-types";
-import {
-  RsaHashedImportParams,
-  RsaHashedKeyGenParams,
-  RsaOaepParams,
-  RsaPssParams,
-} from "./rsa-types";
-import { SubtleCrypto } from "./subtle";
-import {
-  AlgorithmIdentifier,
-  BufferSource,
-  KeyFormat,
-  KeyUsage,
-} from "./util-types";
 import { CryptoKey, CryptoKeyPair, JsonWebKey } from "./crypto-types";
-import { HkdfParams, Pbkdf2Params } from "./pbkdf2-types";
 import {
   EcdhKeyDeriveParams,
   EcdsaParams,
   EcKeyGenParams,
   EcKeyImportParams,
 } from "./ec-types";
+import {
+  RsaHashedImportParams,
+  RsaHashedKeyGenParams,
+  RsaOaepParams,
+  RsaPssParams,
+} from "./rsa-types";
 import { HmacImportParams, HmacKeyGenParams } from "./hmac-types";
 
-export class Subtle implements SubtleCrypto {
-  constructor(protected subtle: SubtleCrypto) {}
-
+/**
+ * @description Provides a low-level interface for cryptographic operations.
+ * @summary
+ * The `SubtleCrypto` interface provides a set of methods for performing cryptographic
+ * operations, including encryption, decryption, signing, verification, key generation,
+ * key derivation, key import, and key export.
+ *
+ * This interface is designed to be used with the Web Crypto API and is implemented
+ * by both browser and Node.js environments.
+ * @interface SubtleCrypto
+ * @memberOf module:@decaf-ts/crypto
+ */
+export interface SubtleCrypto {
+  /**
+   * @description Decrypts data.
+   * @param {AesCbcParams | AesCtrParams | AesGcmParams | AlgorithmIdentifier | RsaOaepParams} algorithm - The algorithm to use for decryption.
+   * @param {CryptoKey} key - The key to use for decryption.
+   * @param {BufferSource} data - The data to decrypt.
+   * @returns {Promise<ArrayBuffer>} A promise that resolves to the decrypted data.
+   */
   decrypt(
     algorithm:
       | AesCbcParams
@@ -41,10 +57,15 @@ export class Subtle implements SubtleCrypto {
       | RsaOaepParams,
     key: CryptoKey,
     data: BufferSource
-  ): Promise<ArrayBuffer> {
-    return this.subtle.decrypt(algorithm, key, data);
-  }
+  ): Promise<ArrayBuffer>;
 
+  /**
+   * @description Derives a secret key from a master key.
+   * @param {EcdhKeyDeriveParams | AlgorithmIdentifier | HkdfParams | Pbkdf2Params} algorithm - The algorithm to use for key derivation.
+   * @param {CryptoKey} baseKey - The master key to use for derivation.
+   * @param {number} [length] - The desired length of the derived key in bits.
+   * @returns {Promise<ArrayBuffer>} A promise that resolves to the derived bits as an ArrayBuffer.
+   */
   deriveBits(
     algorithm:
       | EcdhKeyDeriveParams
@@ -53,10 +74,17 @@ export class Subtle implements SubtleCrypto {
       | Pbkdf2Params,
     baseKey: CryptoKey,
     length?: number
-  ): Promise<ArrayBuffer> {
-    return this.subtle.deriveBits(algorithm, baseKey, length);
-  }
+  ): Promise<ArrayBuffer>;
 
+  /**
+   * @description Derives a secret key from a master key.
+   * @param {EcdhKeyDeriveParams | AlgorithmIdentifier | HkdfParams | Pbkdf2Params} algorithm - The algorithm to use for key derivation.
+   * @param {CryptoKey} baseKey - The master key to use for derivation.
+   * @param {AesDerivedKeyParams | AlgorithmIdentifier | HkdfParams | HmacImportParams | Pbkdf2Params} derivedKeyType - The algorithm to use for the new key.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKey>} A promise that resolves to the new key.
+   */
   deriveKey(
     algorithm:
       | EcdhKeyDeriveParams
@@ -73,6 +101,16 @@ export class Subtle implements SubtleCrypto {
     extractable: boolean,
     keyUsages: KeyUsage[]
   ): Promise<CryptoKey>;
+
+  /**
+   * @description Derives a secret key from a master key.
+   * @param {EcdhKeyDeriveParams | AlgorithmIdentifier | HkdfParams | Pbkdf2Params} algorithm - The algorithm to use for key derivation.
+   * @param {CryptoKey} baseKey - The master key to use for derivation.
+   * @param {AesDerivedKeyParams | AlgorithmIdentifier | HkdfParams | HmacImportParams | Pbkdf2Params} derivedKeyType - The algorithm to use for the new key.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKey>} A promise that resolves to the new key.
+   */
   deriveKey(
     algorithm:
       | EcdhKeyDeriveParams
@@ -89,38 +127,25 @@ export class Subtle implements SubtleCrypto {
     extractable: boolean,
     keyUsages: Iterable<KeyUsage>
   ): Promise<CryptoKey>;
-  deriveKey(
-    algorithm:
-      | EcdhKeyDeriveParams
-      | AlgorithmIdentifier
-      | HkdfParams
-      | Pbkdf2Params,
-    baseKey: CryptoKey,
-    derivedKeyType:
-      | AesDerivedKeyParams
-      | AlgorithmIdentifier
-      | HkdfParams
-      | HmacImportParams
-      | Pbkdf2Params,
-    extractable: boolean,
-    keyUsages: KeyUsage[] | Iterable<KeyUsage>
-  ): Promise<CryptoKey> {
-    return this.subtle.deriveKey(
-      algorithm,
-      baseKey,
-      derivedKeyType,
-      extractable,
-      keyUsages
-    );
-  }
 
+  /**
+   * @description Generates a digest of the given data.
+   * @param {AlgorithmIdentifier} algorithm - The algorithm to use for the digest.
+   * @param {BufferSource} data - The data to digest.
+   * @returns {Promise<ArrayBuffer>} A promise that resolves to the digest.
+   */
   digest(
     algorithm: AlgorithmIdentifier,
     data: BufferSource
-  ): Promise<ArrayBuffer> {
-    return this.subtle.digest(algorithm, data);
-  }
+  ): Promise<ArrayBuffer>;
 
+  /**
+   * @description Encrypts data.
+   * @param {AesCbcParams | AesCtrParams | AesGcmParams | AlgorithmIdentifier | RsaOaepParams} algorithm - The algorithm to use for encryption.
+   * @param {CryptoKey} key - The key to use for encryption.
+   * @param {BufferSource} data - The data to encrypt.
+   * @returns {Promise<ArrayBuffer>} A promise that resolves to the encrypted data.
+   */
   encrypt(
     algorithm:
       | AesCbcParams
@@ -130,106 +155,151 @@ export class Subtle implements SubtleCrypto {
       | RsaOaepParams,
     key: CryptoKey,
     data: BufferSource
-  ): Promise<ArrayBuffer> {
-    return this.subtle.encrypt(algorithm, key, data);
-  }
+  ): Promise<ArrayBuffer>;
 
+  /**
+   * @description Exports a key.
+   * @param {"jwk"} format - The format of the key to export.
+   * @param {CryptoKey} key - The key to export.
+   * @returns {Promise<JsonWebKey>} A promise that resolves to the exported key in JWK format.
+   */
   exportKey(format: "jwk", key: CryptoKey): Promise<JsonWebKey>;
+
+  /**
+   * @description Exports a key.
+   * @param {"raw" | "pkcs8" | "spki"} format - The format of the key to export.
+   * @param {CryptoKey} key - The key to export.
+   * @returns {Promise<ArrayBuffer>} A promise that resolves to the exported key as an ArrayBuffer.
+   */
   exportKey(
     format: "raw" | "pkcs8" | "spki",
     key: CryptoKey
   ): Promise<ArrayBuffer>;
+
+  /**
+   * @description Exports a key.
+   * @param {KeyFormat} format - The format of the key to export.
+   * @param {CryptoKey} key - The key to export.
+   * @returns {Promise<ArrayBuffer | JsonWebKey>} A promise that resolves to the exported key.
+   */
   exportKey(
     format: KeyFormat,
     key: CryptoKey
   ): Promise<ArrayBuffer | JsonWebKey>;
-  exportKey(
-    format: "jwk" | "raw" | "pkcs8" | "spki" | KeyFormat,
-    key: CryptoKey
-  ):
-    | Promise<JsonWebKey>
-    | Promise<ArrayBuffer>
-    | Promise<ArrayBuffer | JsonWebKey> {
-    return this.subtle.exportKey(format, key);
-  }
 
+  /**
+   * @description Generates a new key or key pair.
+   * @param {"Ed25519"} algorithm - The algorithm to use for key generation.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {string[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKeyPair>} A promise that resolves to the new key pair.
+   */
   generateKey(
     algorithm: "Ed25519",
     extractable: boolean,
     keyUsages: readonly ("sign" | "verify")[]
   ): Promise<CryptoKeyPair>;
+
+  /**
+   * @description Generates a new key or key pair.
+   * @param {EcKeyGenParams | RsaHashedKeyGenParams} algorithm - The algorithm to use for key generation.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKeyPair>} A promise that resolves to the new key pair.
+   */
   generateKey(
     algorithm: EcKeyGenParams | RsaHashedKeyGenParams,
     extractable: boolean,
     keyUsages: readonly KeyUsage[]
   ): Promise<CryptoKeyPair>;
+
+  /**
+   * @description Generates a new key or key pair.
+   * @param {AesKeyGenParams | HmacKeyGenParams | Pbkdf2Params} algorithm - The algorithm to use for key generation.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKey>} A promise that resolves to the new key.
+   */
   generateKey(
     algorithm: AesKeyGenParams | HmacKeyGenParams | Pbkdf2Params,
     extractable: boolean,
     keyUsages: readonly KeyUsage[]
   ): Promise<CryptoKey>;
+
+  /**
+   * @description Generates a new key or key pair.
+   * @param {AlgorithmIdentifier} algorithm - The algorithm to use for key generation.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKey | CryptoKeyPair>} A promise that resolves to the new key or key pair.
+   */
   generateKey(
     algorithm: AlgorithmIdentifier,
     extractable: boolean,
     keyUsages: KeyUsage[]
   ): Promise<CryptoKey | CryptoKeyPair>;
+
+  /**
+   * @description Generates a new key or key pair.
+   * @param {"Ed25519"} algorithm - The algorithm to use for key generation.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKeyPair>} A promise that resolves to the new key pair.
+   */
   generateKey(
     algorithm: "Ed25519",
     extractable: boolean,
     keyUsages: readonly ("sign" | "verify")[]
   ): Promise<CryptoKeyPair>;
+
+  /**
+   * @description Generates a new key or key pair.
+   * @param {EcKeyGenParams | RsaHashedKeyGenParams} algorithm - The algorithm to use for key generation.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKeyPair>} A promise that resolves to the new key pair.
+   */
+  generateKey(
+    algorithm: EcKeyGenParams | RsaHashedKeyGenParams,
+    extractable: boolean,
+    keyUsages: readonly KeyUsage[]
+  ): Promise<CryptoKeyPair>;
+
+  /**
+   * @description Generates a new key or key pair.
+   * @param {AesKeyGenParams | HmacKeyGenParams | Pbkdf2Params} algorithm - The algorithm to use for key generation.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKey>} A promise that resolves to the new key.
+   */
+  generateKey(
+    algorithm: AesKeyGenParams | HmacKeyGenParams | Pbkdf2Params,
+    extractable: boolean,
+    keyUsages: readonly KeyUsage[]
+  ): Promise<CryptoKey>;
+
+  /**
+   * @description Generates a new key or key pair.
+   * @param {AlgorithmIdentifier} algorithm - The algorithm to use for key generation.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKey | CryptoKeyPair>} A promise that resolves to the new key or key pair.
+   */
   generateKey(
     algorithm: AlgorithmIdentifier,
     extractable: boolean,
     keyUsages: Iterable<KeyUsage>
   ): Promise<CryptoKey | CryptoKeyPair>;
-  generateKey(
-    algorithm:
-      | "Ed25519"
-      | EcKeyGenParams
-      | RsaHashedKeyGenParams
-      | AesKeyGenParams
-      | HmacKeyGenParams
-      | Pbkdf2Params
-      | AlgorithmIdentifier
-      | "Ed25519",
-    extractable: boolean,
-    keyUsages:
-      | readonly ("sign" | "verify")[]
-      | readonly KeyUsage[]
-      | KeyUsage[]
-      | Iterable<KeyUsage>
-  ):
-    | Promise<CryptoKeyPair>
-    | Promise<CryptoKey>
-    | Promise<CryptoKey | CryptoKeyPair> {
-    return this.subtle.generateKey(algorithm, extractable, keyUsages);
-  }
 
-  importKey(
-    format: "jwk",
-    // keyData: JsonWebKey,
-    algorithm:
-      | AesKeyAlgorithm
-      | AlgorithmIdentifier
-      | EcKeyImportParams
-      | HmacImportParams
-      | RsaHashedImportParams,
-    extractable: boolean,
-    keyUsages: readonly KeyUsage[]
-  ): Promise<CryptoKey>;
-  importKey(
-    format: "raw" | "pkcs8" | "spki",
-    keyData: BufferSource,
-    algorithm:
-      | AesKeyAlgorithm
-      | AlgorithmIdentifier
-      | EcKeyImportParams
-      | HmacImportParams
-      | RsaHashedImportParams,
-    extractable: boolean,
-    keyUsages: KeyUsage[]
-  ): Promise<CryptoKey>;
+  /**
+   * @description Imports a key.
+   * @param {"jwk"} format - The format of the key to import.
+   * @param {JsonWebKey} keyData - The key data in JWK format.
+   * @param {AesKeyAlgorithm | AlgorithmIdentifier | EcKeyImportParams | HmacImportParams | RsaHashedImportParams} algorithm - The algorithm to use for the imported key.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKey>} A promise that resolves to the imported key.
+   */
   importKey(
     format: "jwk",
     keyData: JsonWebKey,
@@ -242,6 +312,60 @@ export class Subtle implements SubtleCrypto {
     extractable: boolean,
     keyUsages: readonly KeyUsage[]
   ): Promise<CryptoKey>;
+
+  /**
+   * @description Imports a key.
+   * @param {"raw" | "pkcs8" | "spki"} format - The format of the key to import.
+   * @param {BufferSource} keyData - The key data.
+   * @param {AesKeyAlgorithm | AlgorithmIdentifier | EcKeyImportParams | HmacImportParams | RsaHashedImportParams} algorithm - The algorithm to use for the imported key.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKey>} A promise that resolves to the imported key.
+   */
+  importKey(
+    format: "raw" | "pkcs8" | "spki",
+    keyData: BufferSource,
+    algorithm:
+      | AesKeyAlgorithm
+      | AlgorithmIdentifier
+      | EcKeyImportParams
+      | HmacImportParams
+      | RsaHashedImportParams,
+    extractable: boolean,
+    keyUsages: KeyUsage[]
+  ): Promise<CryptoKey>;
+
+  /**
+   * @description Imports a key.
+   * @param {"jwk"} format - The format of the key to import.
+   * @param {JsonWebKey} keyData - The key data in JWK format.
+   * @param {AesKeyAlgorithm | AlgorithmIdentifier | EcKeyImportParams | HmacImportParams | RsaHashedImportParams} algorithm - The algorithm to use for the imported key.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKey>} A promise that resolves to the imported key.
+   */
+  importKey(
+    format: "jwk",
+    keyData: JsonWebKey,
+    algorithm:
+      | AesKeyAlgorithm
+      | AlgorithmIdentifier
+      | EcKeyImportParams
+      | HmacImportParams
+      | RsaHashedImportParams,
+    extractable: boolean,
+    keyUsages: readonly KeyUsage[]
+  ): Promise<CryptoKey>;
+
+  /**
+   * @description Imports a key.
+   * @param {"raw" | "pkcs8" | "spki"} format - The format of the key to import.
+   * @param {BufferSource} keyData - The key data.
+   * @param {AesKeyAlgorithm | AlgorithmIdentifier | EcKeyImportParams | HmacImportParams | RsaHashedImportParams} algorithm - The algorithm to use for the imported key.
+   * @param {boolean} extractable - Whether the new key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+   * @returns {Promise<CryptoKey>} A promise that resolves to the imported key.
+   */
   importKey(
     format: "raw" | "pkcs8" | "spki",
     keyData: BufferSource,
@@ -254,35 +378,31 @@ export class Subtle implements SubtleCrypto {
     extractable: boolean,
     keyUsages: Iterable<KeyUsage>
   ): Promise<CryptoKey>;
-  importKey(
-    format: "jwk" | "raw" | "pkcs8" | "spki" | "jwk" | "raw" | "pkcs8" | "spki",
-    keyData: JsonWebKey | BufferSource,
-    algorithm:
-      | AesKeyAlgorithm
-      | AlgorithmIdentifier
-      | EcKeyImportParams
-      | HmacImportParams
-      | RsaHashedImportParams,
-    extractable: boolean,
-    keyUsages: readonly KeyUsage[] | KeyUsage[] | Iterable<KeyUsage>
-  ): Promise<CryptoKey> {
-    return this.subtle.importKey(
-      format,
-      keyData,
-      algorithm,
-      extractable,
-      keyUsages
-    );
-  }
 
+  /**
+   * @description Signs data.
+   * @param {EcdsaParams | AlgorithmIdentifier | RsaPssParams} algorithm - The algorithm to use for signing.
+   * @param {CryptoKey} key - The key to use for signing.
+   * @param {BufferSource} data - The data to sign.
+   * @returns {Promise<ArrayBuffer>} A promise that resolves to the signature.
+   */
   sign(
     algorithm: EcdsaParams | AlgorithmIdentifier | RsaPssParams,
     key: CryptoKey,
     data: BufferSource
-  ): Promise<ArrayBuffer> {
-    return this.subtle.sign(algorithm, key, data);
-  }
+  ): Promise<ArrayBuffer>;
 
+  /**
+   * @description Unwraps a key.
+   * @param {KeyFormat} format - The format of the wrapped key.
+   * @param {BufferSource} wrappedKey - The key to unwrap.
+   * @param {CryptoKey} unwrappingKey - The key to use for unwrapping.
+   * @param {AesCbcParams | AesCtrParams | AesGcmParams | AlgorithmIdentifier | RsaOaepParams} unwrapAlgorithm - The algorithm to use for unwrapping.
+   * @param {AesKeyAlgorithm | AlgorithmIdentifier | EcKeyImportParams | HmacImportParams | RsaHashedImportParams} unwrappedKeyAlgorithm - The algorithm of the key to be unwrapped.
+   * @param {boolean} extractable - Whether the unwrapped key can be extracted.
+   * @param {KeyUsage[]} keyUsages - The allowed usages for the unwrapped key.
+   * @returns {Promise<CryptoKey>} A promise that resolves to the unwrapped key.
+   */
   unwrapKey(
     format: KeyFormat,
     wrappedKey: BufferSource,
@@ -302,6 +422,18 @@ export class Subtle implements SubtleCrypto {
     extractable: boolean,
     keyUsages: KeyUsage[]
   ): Promise<CryptoKey>;
+
+  /**
+   * @description Unwraps a key.
+   * @param {KeyFormat} format - The format of the wrapped key.
+   * @param {BufferSource} wrappedKey - The key to unwrap.
+   * @param {CryptoKey} unwrappingKey - The key to use for unwrapping.
+   * @param {AesCbcParams | AesCtrParams | AesGcmParams | AlgorithmIdentifier | RsaOaepParams} unwrapAlgorithm - The algorithm to use for unwrapping.
+   * @param {AesKeyAlgorithm | AlgorithmIdentifier | EcKeyImportParams | HmacImportParams | RsaHashedImportParams} unwrappedKeyAlgorithm - The algorithm of the key to be unwrapped.
+   * @param {boolean} extractable - Whether the unwrapped key can be extracted.
+   * @param {Iterable<KeyUsage>} keyUsages - The allowed usages for the unwrapped key.
+   * @returns {Promise<CryptoKey>} A promise that resolves to the unwrapped key.
+   */
   unwrapKey(
     format: KeyFormat,
     wrappedKey: BufferSource,
@@ -321,45 +453,30 @@ export class Subtle implements SubtleCrypto {
     extractable: boolean,
     keyUsages: Iterable<KeyUsage>
   ): Promise<CryptoKey>;
-  unwrapKey(
-    format: KeyFormat,
-    wrappedKey: BufferSource,
-    unwrappingKey: CryptoKey,
-    unwrapAlgorithm:
-      | AesCbcParams
-      | AesCtrParams
-      | AesGcmParams
-      | AlgorithmIdentifier
-      | RsaOaepParams,
-    unwrappedKeyAlgorithm:
-      | AesKeyAlgorithm
-      | AlgorithmIdentifier
-      | EcKeyImportParams
-      | HmacImportParams
-      | RsaHashedImportParams,
-    extractable: boolean,
-    keyUsages: KeyUsage[] | Iterable<KeyUsage>
-  ): Promise<CryptoKey> {
-    return this.subtle.unwrapKey(
-      format,
-      wrappedKey,
-      unwrappingKey,
-      unwrapAlgorithm,
-      unwrappedKeyAlgorithm,
-      extractable,
-      keyUsages
-    );
-  }
 
+  /**
+   * @description Verifies a signature.
+   * @param {EcdsaParams | AlgorithmIdentifier | RsaPssParams} algorithm - The algorithm to use for verification.
+   * @param {CryptoKey} key - The key to use for verification.
+   * @param {BufferSource} signature - The signature to verify.
+   * @param {BufferSource} data - The data whose signature is to be verified.
+   * @returns {Promise<boolean>} A promise that resolves to a boolean indicating whether the signature is valid.
+   */
   verify(
     algorithm: EcdsaParams | AlgorithmIdentifier | RsaPssParams,
     key: CryptoKey,
     signature: BufferSource,
     data: BufferSource
-  ): Promise<boolean> {
-    return this.subtle.verify(algorithm, key, signature, data);
-  }
+  ): Promise<boolean>;
 
+  /**
+   * @description Wraps a key.
+   * @param {KeyFormat} format - The format of the key to wrap.
+   * @param {CryptoKey} key - The key to wrap.
+   * @param {CryptoKey} wrappingKey - The key to use for wrapping.
+   * @param {AesCbcParams | AesCtrParams | AesGcmParams | AlgorithmIdentifier | RsaOaepParams} wrapAlgorithm - The algorithm to use for wrapping.
+   * @returns {Promise<ArrayBuffer>} A promise that resolves to the wrapped key.
+   */
   wrapKey(
     format: KeyFormat,
     key: CryptoKey,
@@ -370,7 +487,5 @@ export class Subtle implements SubtleCrypto {
       | AesGcmParams
       | AlgorithmIdentifier
       | RsaOaepParams
-  ): Promise<ArrayBuffer> {
-    return this.subtle.wrapKey(format, key, wrappingKey, wrapAlgorithm);
-  }
+  ): Promise<ArrayBuffer>;
 }

@@ -1,8 +1,8 @@
 /**
- * @module @decaf-ts/crypto/common
+ * @module @decaf-ts/crypto
  * @description
- * This module re-exports common types and interfaces for cryptographic operations.
- * It serves as a central point for accessing shared cryptographic type definitions within the `@decaf-ts/crypto` package.
+ * This module provides a set of common types and interfaces for cryptographic operations within the decaf-ts ecosystem.
+ * It serves as the main entry point for accessing shared cryptographic type definitions.
  * @summary
  * This module exports various type definitions for cryptographic algorithms and concepts, including:
  * - {@link module:@decaf-ts/crypto.AesCbcParams|AES-CBC}, {@link module:@decaf-ts/crypto.AesCtrParams|AES-CTR}, {@link module:@decaf-ts/crypto.AesGcmParams|AES-GCM} parameters.
@@ -15,12 +15,11 @@
  *
  * It also exports the package version.
  */
-export * from "./aes-types";
-export * from "./hmac-types";
-export * from "./rsa-types";
-export * from "./ec-types";
-export * from "./util-types";
-
-export * from "./pbkdf2-types";
-export * from "./crypto-types";
-export * from "../version";
+export * from "./common/aes-types";
+export * from "./common/hmac-types";
+export * from "./common/rsa-types";
+export * from "./common/ec-types";
+export * from "./common/util-types";
+export * from "./common/pbkdf2-types";
+export * from "./common/crypto-types";
+export * from "./version";
