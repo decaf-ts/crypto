@@ -1,6 +1,6 @@
 {
   "name": "@decaf-ts/crypto",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "decaf-ts crypto wrappers",
   "type": "module",
   "exports": {
