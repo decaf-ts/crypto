@@ -8,15 +8,16 @@ import {
 import {
   onCreate,
   onUpdate,
-  UpdateOperationHandler, // Added back - used for encryptOnUpdate
+  UpdateOperationHandler,
   GeneralOperationHandler,
-  StandardOperationHandler, // Added for afterRead
-  afterRead, // Added afterRead function import
+  StandardOperationHandler,
+  afterRead,
 } from "@decaf-ts/db-decorators";
 import { ContextualArgs, Repo } from "@decaf-ts/core";
 import { Model } from "@decaf-ts/decorator-validation";
 import { CryptoError } from "./errors";
 import { getSubtle } from "../common/crypto";
+import { getCrypto } from "../common/crypto";
 import { SubtleCrypto } from "../common/Subtle"; // Explicitly import SubtleCrypto interface
 import {
   AesCbcParams,
@@ -24,11 +25,9 @@ import {
   AesGcmParams,
   AlgorithmIdentifier,
   RsaOaepParams,
-  CryptoKey, // Added CryptoKey import
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  BufferSource, // Added BufferSource import - used indirectly
-  KeyUsage, // Added KeyUsage import
-  Algorithm, // Added Algorithm import
+  CryptoKey,
+  KeyUsage,
+  Algorithm,
 } from "../common/index";
 
 export type SecretFunction = <M extends Model>(
@@ -63,14 +62,14 @@ async function getCryptoSecret<M extends Model>(
 async function getDerivedKey(
   subtle: SubtleCrypto,
   secret: string,
-  algorithm: AlgorithmIdentifier,
+  algorithm: AlgorithmIdentifier, // Changed type to AesKeyAlgorithm
   keyUsages: KeyUsage[]
 ): Promise<CryptoKey> {
   const keyMaterial = new TextEncoder().encode(secret);
   return subtle.importKey(
     "raw",
     keyMaterial,
-    algorithm,
+    { name: algorithm as string }, // Pass only the name property for algorithm identifier
     true, // extractable
     keyUsages
   );
@@ -101,13 +100,15 @@ export const encryptOnCreate: GeneralOperationHandler<any, any, any> =
     if (typeof model[key] === "undefined") return;
     const secret = await getCryptoSecret(data, model, context);
     const subtle = await getSubtle();
-    const derivedKey = await getDerivedKey(subtle, secret, data.algorithm, [
-      "encrypt",
-      "decrypt",
-    ]); // Get the key
+    const derivedKey = await getDerivedKey(
+      subtle,
+      secret,
+      data.algorithm as AlgorithmIdentifier,
+      ["encrypt", "decrypt"]
+    ); // Get the key
 
     const dataToEncrypt = new TextEncoder().encode(JSON.stringify(model[key]));
-    const iv = crypto.getRandomValues(new Uint8Array(12)); // Generate a random IV for AES-GCM
+    const iv = ((await getCrypto()) as any).getRandomValues(new Uint8Array(12)); // Generate a random IV for AES-GCM
 
     const encryptedData = await subtle.encrypt(
       { name: (data.algorithm as Algorithm).name, iv: iv }, // Cast to Algorithm to access name
@@ -204,7 +205,9 @@ export const encryptOnUpdate: UpdateOperationHandler<any, any, any> =
     }
 
     // 4. If data changed or no old data, proceed with new encryption
-    const newIv = crypto.getRandomValues(new Uint8Array(12));
+    const newIv = ((await getCrypto()) as any).getRandomValues(
+      new Uint8Array(12)
+    );
     const newDataToEncrypt = new TextEncoder().encode(currentUnencryptedValue);
 
     const newEncryptedData = await subtle.encrypt(

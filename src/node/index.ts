@@ -10,4 +10,6 @@
  */
 export * from "./Subtle";
 export * from "./Crypto";
+export * from "./Obfuscation";
+export * from "./pbkdf2";
 export * from "../version";

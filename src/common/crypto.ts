@@ -1,6 +1,8 @@
 import { normalizeImport } from "@decaf-ts/core";
 import { SubtleCrypto } from "./Subtle";
 import { InternalError } from "@decaf-ts/db-decorators";
+import type { Crypto as WebCrypto } from "../browser/Crypto";
+import type { Crypto } from "../node/Crypto";
 
 /**
  * @description Dynamically provides the environment-specific `SubtleCrypto` implementation.
@@ -45,4 +47,20 @@ export async function getSubtle() {
     );
   }
   return subtle;
+}
+
+export async function getCrypto<BROWSER extends boolean>(
+  isBrowser: BROWSER = !!(globalThis as any).window as BROWSER
+): Promise<BROWSER extends true ? typeof WebCrypto : typeof Crypto> {
+  let crypto: any;
+  try {
+    if (isBrowser)
+      crypto = (await normalizeImport(import("../browser/index"))).Crypto;
+    else crypto = (await normalizeImport(import("../node/index"))).Crypto;
+  } catch (e: unknown) {
+    throw new InternalError(
+      `Failed to load subtle crypto in ${isBrowser ? "browser" : "node"} environment: ${e}`
+    );
+  }
+  return crypto;
 }
