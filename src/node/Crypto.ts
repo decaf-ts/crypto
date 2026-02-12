@@ -5,7 +5,8 @@ import crypto from "crypto";
  * @summary
  * This constant exports the entire `crypto` module from Node.js, providing
  * access to its various cryptographic functionalities.
- * @const {NodeJS.Crypto}
+ * @const {NodeJS.Crypto} Crypto
+ * @type {NodeJS.Crypto}
  * @memberOf module:@decaf-ts/crypto/node
  */
 export const Crypto = crypto;

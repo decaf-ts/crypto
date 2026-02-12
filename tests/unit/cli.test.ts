@@ -113,7 +113,7 @@ describe("Crypto CLI", () => {
   });
 
   describe("encrypt command", () => {
-    const secret = "test-secret";
+    const secret = "test-secret-key-for-aes256-ok!!!" // exactly 32 bytes for AES-256
     const algorithm = "AES-GCM";
     const keyLength = "256";
 
@@ -138,7 +138,7 @@ describe("Crypto CLI", () => {
 
       // Verify that the logged output can be decrypted to the original data
       const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, keyLength, ["encrypt", "decrypt"]);
+      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
       const decrypted = await decryptContent(subtle, derivedKey, algorithm, loggedHex);
       expect(decrypted).toBe(testData);
       expect(mockProcessExit).not.toHaveBeenCalled();
@@ -171,7 +171,7 @@ describe("Crypto CLI", () => {
 
       // Verify that the written content can be decrypted to the original data
       const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, keyLength, ["encrypt", "decrypt"]);
+      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
       const decrypted = await decryptContent(
         subtle,
         derivedKey,
@@ -211,7 +211,7 @@ describe("Crypto CLI", () => {
       );
       // Verify that the written content can be decrypted to the original data
       const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, keyLength, ["encrypt", "decrypt"]);
+      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
       const decrypted = await decryptContent(
         subtle,
         derivedKey,
@@ -254,7 +254,7 @@ describe("Crypto CLI", () => {
       );
       // Verify that the written content can be decrypted to the original data
       const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, keyLength, ["encrypt", "decrypt"]);
+      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
       const decrypted = await decryptContent(
         subtle,
         derivedKey,
@@ -301,29 +301,26 @@ describe("Crypto CLI", () => {
     });
 
     it("should exit with error on encryption failure", async () => {
-      // To make the actual encryptContent throw an error for this test,
-      // we would need to provide invalid parameters that cause it to fail,
-      // or set up an environment where its dependencies fail.
-      // For now, we will simply check that an error is logged and the process exits.
-      // We are no longer asserting a specific error message, as it was mock-dependent.
+      // Use an invalid algorithm to trigger a real encryption error
       await expect(
-        program.parseAsync(["encrypt", "--data", "test", "--secret", secret], {
-          from: "user",
-        })
+        program.parseAsync(
+          ["encrypt", "--data", "test", "--secret", secret, "--alg", "INVALID-ALG"],
+          { from: "user" }
+        )
       ).rejects.toThrow("process.exit: 1");
       expect(mockError).toHaveBeenCalled();
     });
   });
 
   describe("decrypt command", () => {
-    const secret = "test-secret";
+    const secret = "test-secret-key-for-aes256-ok!!!" // exactly 32 bytes for AES-256
     const algorithm = "AES-GCM";
     const keyLength = "256";
 
     it("should decrypt --data to console", async () => {
       const originalData = "hello world";
       const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, keyLength, ["encrypt", "decrypt"]);
+      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
       const encryptedData = await encryptContent(
         subtle,
         derivedKey, // Use derivedKey here
@@ -351,7 +348,7 @@ describe("Crypto CLI", () => {
     it("should decrypt --data to --out file", async () => {
       const originalData = "hello world";
       const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, keyLength, ["encrypt", "decrypt"]);
+      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
       const encryptedData = await encryptContent(
         subtle,
         derivedKey, // Use derivedKey here
@@ -386,7 +383,7 @@ describe("Crypto CLI", () => {
     it("should decrypt --file in place", async () => {
       const originalContent = "file content";
       const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, keyLength, ["encrypt", "decrypt"]);
+      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
       const encryptedFileContent = await encryptContent(
         subtle,
         derivedKey, // Use derivedKey here
@@ -422,7 +419,7 @@ describe("Crypto CLI", () => {
     it("should decrypt --file to --out file", async () => {
       const originalContent = "file content";
       const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, keyLength, ["encrypt", "decrypt"]);
+      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
       const encryptedFileContent = await encryptContent(
         subtle,
         derivedKey, // Use derivedKey here
@@ -952,27 +949,23 @@ describe("Crypto CLI", () => {
     });
 
     it("should exit with error on deobfuscation failure", async () => {
-      const obfuscatedFilePath = createObfuscatedFile(
-        "bad.txt",
-        "invalid content",
-        secret
-      );
-      // Simulate an invalid obfuscated file by passing completely invalid content
-      // The Obfuscation.deobfuscate method will throw an error internally.
-      // We expect the program to catch this and log an error, then exit.
-      await program.parseAsync(
-          ["deobfuscate", "--target", obfuscatedFilePath, "--secret", secret],
+      // Write invalid (too short) data directly to a .enc file
+      const badFilePath = path.join(tempDir, "bad.txt.enc");
+      fs.writeFileSync(badFilePath, Buffer.from("short"));
+
+      await expect(
+        program.parseAsync(
+          ["deobfuscate", "--target", badFilePath, "--secret", secret],
           { from: "user" }
-        );
-      expect(mockProcessExit).toHaveBeenCalledWith(1);
+        )
+      ).rejects.toThrow("process.exit: 1");
 
       expect(mockError).toHaveBeenCalledWith(
         expect.stringContaining("Deobfuscation of")
       );
       expect(mockError).toHaveBeenCalledWith(
         expect.stringContaining("failed: Invalid prompt payload (too short)")
-      ); // Specific error from real deobfuscation
-
+      );
     });
   });
 });

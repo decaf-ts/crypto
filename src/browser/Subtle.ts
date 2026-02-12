@@ -10,7 +10,8 @@ if (!(globalThis as any).window || !(globalThis as any).window.crypto || !(globa
  * It provides a low-level interface for cryptographic operations.
  *
  * An error is thrown if the code is not running in a browser environment that supports `SubtleCrypto`.
- * @const {SubtleCrypto}
+ * @const {SubtleCrypto} Subtle
+ * @type {SubtleCrypto}
  * @memberOf module:@decaf-ts/crypto/browser
  */
 export const Subtle: SubtleCrypto = (globalThis as any).window.crypto.subtle as any;

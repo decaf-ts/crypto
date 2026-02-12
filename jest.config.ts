@@ -11,10 +11,14 @@ const config: Config.InitialOptions = {
   testRegex: "/tests/.*\\.(test|spec)\\.(ts|tsx)$",
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   transformIgnorePatterns: ["node_modules/(?!(jose)/)"],
+  moduleNameMapper: {
+    "^@decaf-ts/core/ram$": "<rootDir>/node_modules/@decaf-ts/core/lib/ram/index.cjs",
+  },
   collectCoverage: false,
   coverageDirectory: "./workdocs/reports/coverage",
   collectCoverageFrom: ["src/**/*.{js,jsx,ts,tsx}", "!src/bin/**/*"],
   reporters: ["default"],
+  watchman: false,
 };
 
 export default config;

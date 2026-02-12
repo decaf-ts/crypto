@@ -13,6 +13,8 @@ export default [
       "docs",
       "gulpfile.js",
       "workdocs",
+      "psk-crypto",
+      "psk-crypto/**/*",
       "!src/**/*",
       "!tests/**/*",
       "tests/bundling/**/*",

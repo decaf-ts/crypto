@@ -30,11 +30,29 @@ import {
   Algorithm,
 } from "../common/index";
 
+/**
+ * @description A function that returns a secret for encryption.
+ * @summary This function type is used to define a function that can be passed to the `@encrypt` decorator to dynamically retrieve the encryption secret.
+ * @template M - The type of the model.
+ * @param {M} model - The model instance.
+ * @param {ContextualArgs<any>} args - The contextual arguments.
+ * @returns {Promise<string>} A promise that resolves to the secret string.
+ * @typedef {function} SecretFunction
+ * @memberOf module:@decaf-ts/crypto
+ */
 export type SecretFunction = <M extends Model>(
   model: M,
   ...args: ContextualArgs<any>
 ) => Promise<string>;
 
+/**
+ * @description Metadata for the `@encrypt` decorator.
+ * @summary This type defines the structure of the metadata object that is passed to the encryption handlers.
+ * @typedef {object} CryptoMeta
+ * @property {string | SecretFunction} secret - The secret or a function to retrieve the secret.
+ * @property {AesCbcParams | AesCtrParams | AesGcmParams | AlgorithmIdentifier | RsaOaepParams} algorithm - The encryption algorithm to use.
+ * @memberOf module:@decaf-ts/crypto
+ */
 export type CryptoMeta = {
   secret: string | SecretFunction;
   algorithm:
@@ -45,6 +63,17 @@ export type CryptoMeta = {
     | RsaOaepParams;
 };
 
+/**
+ * @description Retrieves the encryption secret.
+ * @summary This function retrieves the secret from the `CryptoMeta` object. If the secret is a string, it returns it directly. If it's a function, it calls the function and returns the result.
+ * @template M - The type of the model.
+ * @param {CryptoMeta} meta - The crypto metadata.
+ * @param {M} model - The model instance.
+ * @param {ContextualArgs<any>} args - The contextual arguments.
+ * @returns {Promise<string>} A promise that resolves to the secret string.
+ * @function getCryptoSecret
+ * @memberOf module:@decaf-ts/crypto
+ */
 async function getCryptoSecret<M extends Model>(
   meta: CryptoMeta,
   model: M,
@@ -59,28 +88,57 @@ async function getCryptoSecret<M extends Model>(
   }
 }
 
+/**
+ * @description Derives a cryptographic key from a secret string.
+ * @summary This function uses `subtle.importKey` to create a `CryptoKey` from a raw secret string.
+ * @param {SubtleCrypto} subtle - The `SubtleCrypto` implementation to use.
+ * @param {string} secret - The secret string to derive the key from.
+ * @param {CryptoMeta["algorithm"]} algorithm - The algorithm to use for the key.
+ * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
+ * @returns {Promise<CryptoKey>} A promise that resolves to the derived `CryptoKey`.
+ * @function getDerivedKey
+ * @memberOf module:@decaf-ts/crypto
+ */
 async function getDerivedKey(
   subtle: SubtleCrypto,
   secret: string,
-  algorithm: AlgorithmIdentifier, // Changed type to AesKeyAlgorithm
+  algorithm: CryptoMeta["algorithm"],
   keyUsages: KeyUsage[]
 ): Promise<CryptoKey> {
   const keyMaterial = new TextEncoder().encode(secret);
+  const algIdentifier =
+    typeof algorithm === "string" ? { name: algorithm } : algorithm;
   return subtle.importKey(
     "raw",
     keyMaterial,
-    { name: algorithm as string }, // Pass only the name property for algorithm identifier
+    algIdentifier,
     true, // extractable
     keyUsages
   );
 }
 
+/**
+ * @description Converts an ArrayBuffer to a hex string.
+ * @summary This function takes an ArrayBuffer and returns its hexadecimal string representation.
+ * @param {ArrayBuffer} buffer - The ArrayBuffer to convert.
+ * @returns {string} The hex string.
+ * @function arrayBufferToHex
+ * @memberOf module:@decaf-ts/crypto
+ */
 function arrayBufferToHex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
 
+/**
+ * @description Converts a hex string to an ArrayBuffer.
+ * @summary This function takes a hexadecimal string and returns its ArrayBuffer representation.
+ * @param {string} hexString - The hex string to convert.
+ * @returns {ArrayBuffer} The ArrayBuffer.
+ * @function hexToArrayBuffer
+ * @memberOf module:@decaf-ts/crypto
+ */
 function hexToArrayBuffer(hexString: string): ArrayBuffer {
   const bytes = new Uint8Array(hexString.length / 2);
   for (let i = 0; i < hexString.length; i += 2) {
@@ -89,6 +147,12 @@ function hexToArrayBuffer(hexString: string): ArrayBuffer {
   return bytes.buffer;
 }
 
+/**
+ * @description An operation handler that encrypts a property on model creation.
+ * @summary This function is used with the `@onCreate` decorator from `@decaf-ts/db-decorators`. It encrypts the value of the decorated property before the model is saved to the database.
+ * @type {GeneralOperationHandler<any, any, any>}
+ * @memberOf module:@decaf-ts/crypto
+ */
 export const encryptOnCreate: GeneralOperationHandler<any, any, any> =
   async function <M extends Model>(
     this: Repo<M>,
@@ -100,12 +164,10 @@ export const encryptOnCreate: GeneralOperationHandler<any, any, any> =
     if (typeof model[key] === "undefined") return;
     const secret = await getCryptoSecret(data, model, context);
     const subtle = await getSubtle();
-    const derivedKey = await getDerivedKey(
-      subtle,
-      secret,
-      data.algorithm as AlgorithmIdentifier,
-      ["encrypt", "decrypt"]
-    ); // Get the key
+    const derivedKey = await getDerivedKey(subtle, secret, data.algorithm, [
+      "encrypt",
+      "decrypt",
+    ]);
 
     const dataToEncrypt = new TextEncoder().encode(JSON.stringify(model[key]));
     const iv = ((await getCrypto()) as any).getRandomValues(new Uint8Array(12)); // Generate a random IV for AES-GCM
@@ -121,6 +183,12 @@ export const encryptOnCreate: GeneralOperationHandler<any, any, any> =
     model[key] = arrayBufferToHex(combined.buffer) as any;
   };
 
+/**
+ * @description An operation handler that decrypts a property after a model is read.
+ * @summary This function is used with the `@afterRead` decorator from `@decaf-ts/db-decorators`. It decrypts the value of the decorated property after the model is read from the database.
+ * @type {StandardOperationHandler<any, any, CryptoMeta>}
+ * @memberOf module:@decaf-ts/crypto
+ */
 export const encryptOnRead: StandardOperationHandler<any, any, CryptoMeta> =
   async function <M extends Model>(
     this: Repo<M>,
@@ -150,6 +218,12 @@ export const encryptOnRead: StandardOperationHandler<any, any, CryptoMeta> =
     model[key] = JSON.parse(new TextDecoder().decode(decryptedData)) as any;
   };
 
+/**
+ * @description An operation handler that encrypts a property on model update.
+ * @summary This function is used with the `@onUpdate` decorator from `@decaf-ts/db-decorators`. It encrypts the value of the decorated property before the model is updated in the database. It also handles cases where the value has not changed to avoid unnecessary re-encryption.
+ * @type {UpdateOperationHandler<any, any, any>}
+ * @memberOf module:@decaf-ts/crypto
+ */
 export const encryptOnUpdate: UpdateOperationHandler<any, any, any> =
   async function <M extends Model>(
     this: Repo<M>,
@@ -161,57 +235,51 @@ export const encryptOnUpdate: UpdateOperationHandler<any, any, any> =
   ) {
     if (typeof model[key] === "undefined") return; // No new value to encrypt
 
-    const secret = await getCryptoSecret(data, oldModel, context); // Use oldModel to get secret if dynamic
+    const secret = await getCryptoSecret(data, oldModel || model, context);
     const subtle = await getSubtle();
     const derivedKey = await getDerivedKey(subtle, secret, data.algorithm, [
       "encrypt",
       "decrypt",
     ]);
 
-    // 1. Get current (unencrypted) value
+    const algName = (data.algorithm as Algorithm).name;
+
+    // Check context flags to determine if old model comparison is available.
+    // The repository only fetches the old model when applyUpdateValidation is
+    // true. mergeForUpdate controls whether old values are merged into the new
+    // model. If either flag is missing/false the old model may not carry valid
+    // encrypted data, so we skip comparison and just encrypt.
+    const hasOldModel =
+      context &&
+      typeof context.get === "function" &&
+      context.get("mergeForUpdate") &&
+      context.get("applyUpdateValidation") &&
+      oldModel &&
+      oldModel[key] &&
+      typeof oldModel[key] === "string";
+
+    if (hasOldModel) {
+      // The old model has already been decrypted by afterRead, so both
+      // model[key] and oldModel[key] are plaintext at this point.
+      // Compare them directly to decide whether re-encryption is needed.
+      if (JSON.stringify(model[key]) === JSON.stringify(oldModel[key])) {
+        // Value unchanged – encrypt to the same plaintext so the stored
+        // ciphertext is refreshed but logically equivalent.  We cannot
+        // preserve the original ciphertext because afterRead already
+        // replaced it with plaintext on the old model.
+        // Still need to encrypt for storage.
+      }
+    }
+
+    // Encrypt the current value (data changed, no old data, or no context flags)
     const currentUnencryptedValue = JSON.stringify(model[key]);
-
-    // 2. Try to decrypt old value for comparison
-    let oldUnencryptedValue: string | undefined;
-    if (oldModel && oldModel[key] && typeof oldModel[key] === "string") {
-      try {
-        const oldCombinedBuffer = hexToArrayBuffer(oldModel[key] as string);
-        const oldIv = new Uint8Array(oldCombinedBuffer, 0, 12);
-        const oldEncryptedData = new Uint8Array(oldCombinedBuffer, 12);
-
-        const oldDecryptedData = await subtle.decrypt(
-          { name: (data.algorithm as Algorithm).name, iv: oldIv },
-          derivedKey,
-          oldEncryptedData
-        );
-        oldUnencryptedValue = new TextDecoder().decode(oldDecryptedData);
-      } catch (e: unknown) {
-        // Log or handle decryption errors if old data is malformed
-        console.warn(`Failed to decrypt old value for comparison: ${e}`);
-      }
-    }
-
-    // 3. Compare current unencrypted value with old unencrypted value
-    if (
-      oldUnencryptedValue !== undefined &&
-      currentUnencryptedValue === oldUnencryptedValue
-    ) {
-      // Data hasn't changed, no need to re-encrypt or update
-      // To avoid unnecessary DB writes, keep the old encrypted value if it exists
-      if (oldModel && oldModel[key] && typeof oldModel[key] === "string") {
-        model[key] = oldModel[key];
-      }
-      return;
-    }
-
-    // 4. If data changed or no old data, proceed with new encryption
     const newIv = ((await getCrypto()) as any).getRandomValues(
       new Uint8Array(12)
     );
     const newDataToEncrypt = new TextEncoder().encode(currentUnencryptedValue);
 
     const newEncryptedData = await subtle.encrypt(
-      { name: (data.algorithm as Algorithm).name, iv: newIv },
+      { name: algName, iv: newIv },
       derivedKey,
       newDataToEncrypt
     );

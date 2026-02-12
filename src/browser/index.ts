@@ -1,11 +1,9 @@
 /**
  * @module @decaf-ts/crypto/browser
  * @description
- * This module provides the browser-specific implementation of the `SubtleCrypto` interface.
+ * This module provides the browser-specific implementations of cryptographic functionalities.
  * @summary
- * This module exports:
- * - {@link module:@decaf-ts/crypto/browser.Subtle|Subtle}: The browser's native `SubtleCrypto` implementation.
- * - The package version.
+ * This module exports the browser-specific implementations of the {@link module:@decaf-ts/crypto/browser.Subtle|SubtleCrypto} interface and the {@link module:@decaf-ts/crypto/browser.Crypto|Crypto} object. It ensures that the cryptographic operations are performed using the native Web Crypto API available in modern browsers.
  */
 export * from "./Subtle";
 export * from "./Crypto";

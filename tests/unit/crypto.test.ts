@@ -117,7 +117,7 @@ describe("Subtle Crypto - AES-GCM (Secure)", () => {
 
 describe("Encrypt Decorator Logic", () => {
   let subtle: SubtleCrypto;
-  const secret = "a-very-secret-key-for-testing-1234"; // 32 characters for 256bit raw key
+  const secret = "a-very-secret-key-for-testing-12"; // exactly 32 bytes for AES-256 raw key
   const algorithm: CryptoMeta["algorithm"] = { name: "AES-GCM", length: 256 };
 
   // Mock Model and Repo classes
@@ -125,8 +125,21 @@ describe("Encrypt Decorator Logic", () => {
     id: string = "1";
     sensitiveData: any;
   }
+
+  // Context without flags (no old model comparison)
+  const plainContext: any = {};
+
+  // Context with flags set (old model comparison enabled)
+  const flaggedContext: any = {
+    get: (key: string) => {
+      if (key === "mergeForUpdate") return true;
+      if (key === "applyUpdateValidation") return true;
+      return undefined;
+    },
+  };
+
   class MockRepo {
-    context: any = {};
+    context: any = plainContext;
     model: MockModel = new MockModel();
   }
   const mockRepo = new MockRepo();
@@ -156,7 +169,7 @@ describe("Encrypt Decorator Logic", () => {
     const ciphertextWithTag = Buffer.from(encryptedHex.substring(24), "hex");
 
     const decryptedData = await subtle.decrypt(
-      { name: algorithm.name, iv: iv },
+      { name: (algorithm as any).name, iv: iv },
       await subtle.importKey(
         "raw",
         new TextEncoder().encode(secret),
@@ -187,7 +200,7 @@ describe("Encrypt Decorator Logic", () => {
     );
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const encryptedData = await realSubtle.encrypt(
-      { name: algorithm.name, iv: iv },
+      { name: (algorithm as any).name, iv: iv },
       realKey,
       new TextEncoder().encode(JSON.stringify(initialData))
     );
@@ -218,35 +231,14 @@ describe("Encrypt Decorator Logic", () => {
     const model = new MockModel();
     const oldModel = new MockModel();
 
-    // Setup oldModel as it would be in the DB
+    // In the real framework, afterRead has already decrypted oldModel,
+    // so oldModel.sensitiveData is plaintext.
     oldModel.sensitiveData = initialData;
-    const realSubtle = await getSubtle();
-    const realKey = await realSubtle.importKey(
-      "raw",
-      new TextEncoder().encode(secret),
-      algorithm,
-      true,
-      ["encrypt", "decrypt"]
-    );
-    const oldIv = crypto.getRandomValues(new Uint8Array(12));
-    const oldEncryptedData = await realSubtle.encrypt(
-      { name: algorithm.name, iv: oldIv },
-      realKey,
-      new TextEncoder().encode(JSON.stringify(initialData))
-    );
-    const oldCombined = new Uint8Array(
-      oldIv.byteLength + oldEncryptedData.byteLength
-    );
-    oldCombined.set(oldIv, 0);
-    oldCombined.set(new Uint8Array(oldEncryptedData), oldIv.byteLength);
-    oldModel.sensitiveData = Array.from(oldCombined)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    model.sensitiveData = updatedData;
 
-    model.sensitiveData = updatedData; // Simulate client-side update
-    // Call onUpdate
+    // Call onUpdate with flagged context (old model comparison enabled)
     await encryptOnUpdate.apply(mockRepo, [
-      mockRepo.context,
+      flaggedContext,
       { secret, algorithm },
       "sensitiveData",
       model,
@@ -255,13 +247,12 @@ describe("Encrypt Decorator Logic", () => {
 
     expect(typeof model.sensitiveData).toBe("string");
     expect(model.sensitiveData).not.toBe(updatedData); // Should be encrypted
-    expect(model.sensitiveData).not.toBe(oldModel.sensitiveData); // Should be a new encryption
 
     // Verify decryption of the new encrypted value
     const verifyModel = new MockModel();
     verifyModel.sensitiveData = model.sensitiveData;
     await encryptOnRead.apply(mockRepo, [
-      mockRepo.context,
+      plainContext,
       { secret, algorithm },
       "sensitiveData",
       verifyModel,
@@ -269,49 +260,41 @@ describe("Encrypt Decorator Logic", () => {
     expect(verifyModel.sensitiveData).toBe(updatedData);
   });
 
-  it("should NOT re-encrypt data on onUpdate hook if data is UNCHANGED", async () => {
+  it("should encrypt data on onUpdate hook even when data is UNCHANGED", async () => {
     const initialData = "unchanged data";
     const model = new MockModel();
     const oldModel = new MockModel();
 
-    // Setup oldModel as it would be in the DB
+    // In the real framework, afterRead has already decrypted oldModel,
+    // so both model and oldModel contain plaintext.
     oldModel.sensitiveData = initialData;
-    const realSubtle = await getSubtle();
-    const realKey = await realSubtle.importKey(
-      "raw",
-      new TextEncoder().encode(secret),
-      algorithm,
-      true,
-      ["encrypt", "decrypt"]
-    );
-    const oldIv = crypto.getRandomValues(new Uint8Array(12));
-    const oldEncryptedData = await realSubtle.encrypt(
-      { name: algorithm.name, iv: oldIv },
-      realKey,
-      new TextEncoder().encode(JSON.stringify(initialData))
-    );
-    const oldCombined = new Uint8Array(
-      oldIv.byteLength + oldEncryptedData.byteLength
-    );
-    oldCombined.set(oldIv, 0);
-    oldCombined.set(new Uint8Array(oldEncryptedData), oldIv.byteLength);
-    oldModel.sensitiveData = Array.from(oldCombined)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
-    // Simulate model with same data
     model.sensitiveData = initialData;
 
-    // Call onUpdate
+    // Call onUpdate with flagged context (old model comparison enabled)
     await encryptOnUpdate.apply(mockRepo, [
-      mockRepo.context,
+      flaggedContext,
       { secret, algorithm },
       "sensitiveData",
       model,
       oldModel,
     ]);
 
-    expect(model.sensitiveData).toBe(oldModel.sensitiveData); // Should remain the same encrypted hex
+    // Even with identical plaintext, the value must be encrypted for storage.
+    // A new random IV means a different ciphertext each time.
+    expect(typeof model.sensitiveData).toBe("string");
+    expect(model.sensitiveData).not.toBe(initialData);
+    expect(model.sensitiveData.length).toBeGreaterThan(24);
+
+    // Verify decryption still yields the original value
+    const verifyModel = new MockModel();
+    verifyModel.sensitiveData = model.sensitiveData;
+    await encryptOnRead.apply(mockRepo, [
+      plainContext,
+      { secret, algorithm },
+      "sensitiveData",
+      verifyModel,
+    ]);
+    expect(verifyModel.sensitiveData).toBe(initialData);
   });
 
   it("should handle invalid oldModel[key] gracefully on onUpdate (e.g., first update from unencrypted)", async () => {

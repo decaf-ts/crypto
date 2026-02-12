@@ -47,6 +47,8 @@ export interface SubtleCrypto {
    * @param {CryptoKey} key - The key to use for decryption.
    * @param {BufferSource} data - The data to decrypt.
    * @returns {Promise<ArrayBuffer>} A promise that resolves to the decrypted data.
+   * @function decrypt
+   * @memberOf module:@decaf-ts/crypto
    */
   decrypt(
     algorithm:
@@ -65,6 +67,8 @@ export interface SubtleCrypto {
    * @param {CryptoKey} baseKey - The master key to use for derivation.
    * @param {number} [length] - The desired length of the derived key in bits.
    * @returns {Promise<ArrayBuffer>} A promise that resolves to the derived bits as an ArrayBuffer.
+   * @function deriveBits
+   * @memberOf module:@decaf-ts/crypto
    */
   deriveBits(
     algorithm:
@@ -84,6 +88,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKey>} A promise that resolves to the new key.
+   * @function deriveKey
+   * @memberOf module:@decaf-ts/crypto
    */
   deriveKey(
     algorithm:
@@ -110,6 +116,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKey>} A promise that resolves to the new key.
+   * @function deriveKey
+   * @memberOf module:@decaf-ts/crypto
    */
   deriveKey(
     algorithm:
@@ -133,6 +141,8 @@ export interface SubtleCrypto {
    * @param {AlgorithmIdentifier} algorithm - The algorithm to use for the digest.
    * @param {BufferSource} data - The data to digest.
    * @returns {Promise<ArrayBuffer>} A promise that resolves to the digest.
+   * @function digest
+   * @memberOf module:@decaf-ts/crypto
    */
   digest(
     algorithm: AlgorithmIdentifier,
@@ -145,6 +155,8 @@ export interface SubtleCrypto {
    * @param {CryptoKey} key - The key to use for encryption.
    * @param {BufferSource} data - The data to encrypt.
    * @returns {Promise<ArrayBuffer>} A promise that resolves to the encrypted data.
+   * @function encrypt
+   * @memberOf module:@decaf-ts/crypto
    */
   encrypt(
     algorithm:
@@ -162,6 +174,8 @@ export interface SubtleCrypto {
    * @param {"jwk"} format - The format of the key to export.
    * @param {CryptoKey} key - The key to export.
    * @returns {Promise<JsonWebKey>} A promise that resolves to the exported key in JWK format.
+   * @function exportKey
+   * @memberOf module:@decaf-ts/crypto
    */
   exportKey(format: "jwk", key: CryptoKey): Promise<JsonWebKey>;
 
@@ -170,6 +184,8 @@ export interface SubtleCrypto {
    * @param {"raw" | "pkcs8" | "spki"} format - The format of the key to export.
    * @param {CryptoKey} key - The key to export.
    * @returns {Promise<ArrayBuffer>} A promise that resolves to the exported key as an ArrayBuffer.
+   * @function exportKey
+   * @memberOf module:@decaf-ts/crypto
    */
   exportKey(
     format: "raw" | "pkcs8" | "spki",
@@ -181,6 +197,8 @@ export interface SubtleCrypto {
    * @param {KeyFormat} format - The format of the key to export.
    * @param {CryptoKey} key - The key to export.
    * @returns {Promise<ArrayBuffer | JsonWebKey>} A promise that resolves to the exported key.
+   * @function exportKey
+   * @memberOf module:@decaf-ts/crypto
    */
   exportKey(
     format: KeyFormat,
@@ -193,6 +211,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {string[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKeyPair>} A promise that resolves to the new key pair.
+   * @function generateKey
+   * @memberOf module:@decaf-ts/crypto
    */
   generateKey(
     algorithm: "Ed25519",
@@ -206,6 +226,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKeyPair>} A promise that resolves to the new key pair.
+   * @function generateKey
+   * @memberOf module:@decaf-ts/crypto
    */
   generateKey(
     algorithm: EcKeyGenParams | RsaHashedKeyGenParams,
@@ -219,6 +241,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKey>} A promise that resolves to the new key.
+   * @function generateKey
+   * @memberOf module:@decaf-ts/crypto
    */
   generateKey(
     algorithm: AesKeyGenParams | HmacKeyGenParams | Pbkdf2Params,
@@ -232,6 +256,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKey | CryptoKeyPair>} A promise that resolves to the new key or key pair.
+   * @function generateKey
+   * @memberOf module:@decaf-ts/crypto
    */
   generateKey(
     algorithm: AlgorithmIdentifier,
@@ -245,6 +271,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKeyPair>} A promise that resolves to the new key pair.
+   * @function generateKey
+   * @memberOf module:@decaf-ts/crypto
    */
   generateKey(
     algorithm: "Ed25519",
@@ -258,6 +286,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKeyPair>} A promise that resolves to the new key pair.
+   * @function generateKey
+   * @memberOf module:@decaf-ts/crypto
    */
   generateKey(
     algorithm: EcKeyGenParams | RsaHashedKeyGenParams,
@@ -271,6 +301,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKey>} A promise that resolves to the new key.
+   * @function generateKey
+   * @memberOf module:@decaf-ts/crypto
    */
   generateKey(
     algorithm: AesKeyGenParams | HmacKeyGenParams | Pbkdf2Params,
@@ -284,6 +316,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKey | CryptoKeyPair>} A promise that resolves to the new key or key pair.
+   * @function generateKey
+   * @memberOf module:@decaf-ts/crypto
    */
   generateKey(
     algorithm: AlgorithmIdentifier,
@@ -299,6 +333,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKey>} A promise that resolves to the imported key.
+   * @function importKey
+   * @memberOf module:@decaf-ts/crypto
    */
   importKey(
     format: "jwk",
@@ -321,6 +357,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKey>} A promise that resolves to the imported key.
+   * @function importKey
+   * @memberOf module:@decaf-ts/crypto
    */
   importKey(
     format: "raw" | "pkcs8" | "spki",
@@ -343,6 +381,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKey>} A promise that resolves to the imported key.
+   * @function importKey
+   * @memberOf module:@decaf-ts/crypto
    */
   importKey(
     format: "jwk",
@@ -365,6 +405,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the new key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
    * @returns {Promise<CryptoKey>} A promise that resolves to the imported key.
+   * @function importKey
+   * @memberOf module:@decaf-ts/crypto
    */
   importKey(
     format: "raw" | "pkcs8" | "spki",
@@ -385,6 +427,8 @@ export interface SubtleCrypto {
    * @param {CryptoKey} key - The key to use for signing.
    * @param {BufferSource} data - The data to sign.
    * @returns {Promise<ArrayBuffer>} A promise that resolves to the signature.
+   * @function sign
+   * @memberOf module:@decaf-ts/crypto
    */
   sign(
     algorithm: EcdsaParams | AlgorithmIdentifier | RsaPssParams,
@@ -402,6 +446,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the unwrapped key can be extracted.
    * @param {KeyUsage[]} keyUsages - The allowed usages for the unwrapped key.
    * @returns {Promise<CryptoKey>} A promise that resolves to the unwrapped key.
+   * @function unwrapKey
+   * @memberOf module:@decaf-ts/crypto
    */
   unwrapKey(
     format: KeyFormat,
@@ -433,6 +479,8 @@ export interface SubtleCrypto {
    * @param {boolean} extractable - Whether the unwrapped key can be extracted.
    * @param {Iterable<KeyUsage>} keyUsages - The allowed usages for the unwrapped key.
    * @returns {Promise<CryptoKey>} A promise that resolves to the unwrapped key.
+   * @function unwrapKey
+   * @memberOf module:@decaf-ts/crypto
    */
   unwrapKey(
     format: KeyFormat,
@@ -461,6 +509,8 @@ export interface SubtleCrypto {
    * @param {BufferSource} signature - The signature to verify.
    * @param {BufferSource} data - The data whose signature is to be verified.
    * @returns {Promise<boolean>} A promise that resolves to a boolean indicating whether the signature is valid.
+   * @function verify
+   * @memberOf module:@decaf-ts/crypto
    */
   verify(
     algorithm: EcdsaParams | AlgorithmIdentifier | RsaPssParams,
@@ -476,6 +526,8 @@ export interface SubtleCrypto {
    * @param {CryptoKey} wrappingKey - The key to use for wrapping.
    * @param {AesCbcParams | AesCtrParams | AesGcmParams | AlgorithmIdentifier | RsaOaepParams} wrapAlgorithm - The algorithm to use for wrapping.
    * @returns {Promise<ArrayBuffer>} A promise that resolves to the wrapped key.
+   * @function wrapKey
+   * @memberOf module:@decaf-ts/crypto
    */
   wrapKey(
     format: KeyFormat,

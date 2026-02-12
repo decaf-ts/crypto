@@ -6,7 +6,8 @@ import crypto from "crypto";
  * @summary
  * This constant exports the `SubtleCrypto` object from the Node.js `crypto` module.
  * It provides a low-level interface for cryptographic operations in a Node.js environment.
- * @const {SubtleCrypto}
+ * @const {SubtleCrypto} Subtle
+ * @type {SubtleCrypto}
  * @memberOf module:@decaf-ts/crypto/node
  */
 export const Subtle: SubtleCrypto = crypto.subtle as SubtleCrypto;

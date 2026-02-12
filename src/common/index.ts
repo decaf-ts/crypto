@@ -1,19 +1,9 @@
 /**
  * @module @decaf-ts/crypto/common
  * @description
- * This module re-exports common types and interfaces for cryptographic operations.
- * It serves as a central point for accessing shared cryptographic type definitions within the `@decaf-ts/crypto` package.
+ * This module serves as a central hub for common cryptographic types and interfaces used across the `@decaf-ts/crypto` library.
  * @summary
- * This module exports various type definitions for cryptographic algorithms and concepts, including:
- * - {@link module:@decaf-ts/crypto.AesCbcParams|AES-CBC}, {@link module:@decaf-ts/crypto.AesCtrParams|AES-CTR}, {@link module:@decaf-ts/crypto.AesGcmParams|AES-GCM} parameters.
- * - {@link module:@decaf-ts/crypto.HmacKeyGenParams|HMAC} parameters.
- * - {@link module:@decaf-ts/crypto.RsaHashedKeyGenParams|RSA} parameters.
- * - {@link module:@decaf-ts/crypto.EcKeyGenParams|Elliptic Curve} parameters.
- * - Utility types like {@link module:@decaf-ts/crypto.AlgorithmIdentifier|AlgorithmIdentifier}, {@link module:@decaf-ts/crypto.BufferSource|BufferSource}, and {@link module:@decaf-ts/crypto.KeyUsage|KeyUsage}.
- * - {@link module:@decaf-ts/crypto.Pbkdf2Params|PBKDF2} parameters.
- * - Core crypto types like {@link module:@decaf-ts/crypto.CryptoKey|CryptoKey}, {@link module:@decaf-ts/crypto.CryptoKeyPair|CryptoKeyPair}, and {@link module:@decaf-ts/crypto.JsonWebKey|JsonWebKey}.
- *
- * It also exports the package version.
+ * This module re-exports a comprehensive set of type definitions for various cryptographic algorithms and concepts, ensuring a consistent API for both browser and Node.js environments. Key exports include types for AES, HMAC, RSA, Elliptic Curve, PBKDF2, and core cryptographic structures like {@link module:@decaf-ts/crypto.CryptoKey|CryptoKey}. It also exports the package {@link module:@decaf-ts/crypto.VERSION|VERSION}.
  */
 export * from "./aes-types";
 export * from "./hmac-types";

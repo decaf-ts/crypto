@@ -4,13 +4,14 @@ if (!(globalThis as any).window || !(globalThis as any).window.crypto)
   );
 
 /**
- * @description The browser's native `SubtleCrypto` implementation.
+ * @description The browser's native `Crypto` object.
  * @summary
- * This constant exports the `SubtleCrypto` object from the Web Crypto API available in the browser.
- * It provides a low-level interface for cryptographic operations.
+ * This constant exports the `crypto` object from the `window` object, providing
+ * access to its `getRandomValues` and `randomUUID` methods.
  *
- * An error is thrown if the code is not running in a browser environment that supports `SubtleCrypto`.
- * @const {SubtleCrypto}
+ * An error is thrown if the code is not running in a browser environment that supports `window.crypto`.
+ * @const {object} Crypto
+ * @type {{getRandomValues<T extends ArrayBufferView>(array: T): T; randomUUID(): string;}}
  * @memberOf module:@decaf-ts/crypto/browser
  */
 export const Crypto = (globalThis as any).window.crypto as {
