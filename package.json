@@ -28,11 +28,6 @@
       "require": "./lib/common/index.cjs",
       "import": "./lib/esm/common/index.js",
       "types": "./lib/common/index.d.ts"
-    },
-    "./psk": {
-      "require": "./lib/psk/index.cjs",
-      "import": "./lib/esm/psk/index.js",
-      "types": "./lib/psk/index.d.ts"
     }
   },
   "types": "lib/index.d.ts",
@@ -80,25 +75,8 @@
     "dist"
   ],
   "keywords": [
-    "plantuml",
-    "mermaid",
-    "uml",
-    "drawio",
-    "mddocs",
-    "md",
-    "jsdoc",
-    "doc",
-    "docs",
-    "documentation",
-    "test",
-    "reports",
-    "confluence",
-    "ci/cd",
-    "ci",
-    "cd",
-    "template",
-    "typescript",
-    "ts"
+    "crypto",
+    "jwt"
   ],
   "author": "Tiago Venceslau and contributors",
   "license": "MIT",
@@ -107,25 +85,18 @@
   },
   "homepage": "https://github.com/decaf-ts/crypto#readme",
   "devDependencies": {
-    "@decaf-ts/logging": "^0.10.13",
+    "@decaf-ts/logging": "latest",
     "@decaf-ts/utils": "latest",
-    "@types/asn1": "^0.2.4",
-    "@types/jsonwebtoken": "^9.0.2",
-    "asn1": "^0.2.6",
     "commander": "^14.0.3",
-    "eciesjs": "^0.4.17",
-    "fast-check": "^4.5.3",
-    "jsonwebtoken": "^9.0.3"
+    "fast-check": "^4.5.3"
   },
   "dependencies": {
-    "better-docs": "^2.7.3",
-    "jose": "^6.1.3",
-    "taffydb": "^2.7.3"
+    "jose": "^6.1.3"
   },
   "optionalDependencies": {
-    "@decaf-ts/core": "^0.8.41",
-    "@decaf-ts/db-decorators": "^0.8.19",
-    "@decaf-ts/decoration": "^0.8.7",
-    "@decaf-ts/decorator-validation": "^1.11.18"
+    "@decaf-ts/core": "latest",
+    "@decaf-ts/db-decorators": "latest",
+    "@decaf-ts/decoration": "latest",
+    "@decaf-ts/decorator-validation": "latest"
   }
 }

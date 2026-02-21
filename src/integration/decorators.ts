@@ -365,9 +365,9 @@ export function encrypt(
       const meta: CryptoMeta = { secret: secret, algorithm };
       return apply(
         propMetadata(Metadata.key(CryptoKeys.ENCRYPTED, propertyKey), meta),
-        onCreate(encryptOnCreate, meta, { priority: 90 }),
+        onCreate(encryptOnCreate, meta, { priority: 86 }),
         afterRead(encryptOnRead, meta),
-        onUpdate(encryptOnUpdate, meta, { priority: 90 })
+        onUpdate(encryptOnUpdate, meta, { priority: 86 })
       )(target, propertyKey);
     };
   }
