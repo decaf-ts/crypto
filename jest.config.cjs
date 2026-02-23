@@ -1,10 +1,10 @@
-import { Config } from "@jest/types";
+const path = require("path");
 
-const config: Config.InitialOptions = {
+const config = {
   verbose: true,
   rootDir: __dirname,
   transform: {
-    "^.+\\.ts?$": "ts-jest",
+    "^.+\\.ts$": "ts-jest",
     "node_modules/jose/.+\\.js$": "ts-jest", // Apply ts-jest to jose's js files
   },
   testEnvironment: "node",
@@ -21,4 +21,4 @@ const config: Config.InitialOptions = {
   watchman: false,
 };
 
-export default config;
+module.exports = config;
