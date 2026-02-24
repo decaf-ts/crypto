@@ -6,7 +6,7 @@ import {
 } from "@decaf-ts/core";
 import { Pbkdf2Hash } from "../../node/pbkdf2";
 import { Crypto } from "../../node/Crypto";
-import { getCrypto } from "src/common/crypto";
+import { getCrypto } from "../../common/crypto";
 import { InternalError } from "@decaf-ts/db-decorators";
 
 @description("Secure cryptographic operations service")
