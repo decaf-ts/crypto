@@ -11,6 +11,7 @@
  *
  * This module is designed to provide a consistent and environment-agnostic way to perform cryptographic operations within the decaf-ts ecosystem.
  */
+import "./overrides";
 export * from "./common/aes-types";
 export * from "./common/hmac-types";
 export * from "./common/rsa-types";
