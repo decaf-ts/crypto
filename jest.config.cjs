@@ -12,7 +12,7 @@ const config = {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   transformIgnorePatterns: ["node_modules/(?!(jose)/)"],
   moduleNameMapper: {
-    "^@decaf-ts/core/ram$": "<rootDir>/node_modules/@decaf-ts/core/lib/ram/index.cjs",
+    "^@decaf-ts/core/ram$": "<rootDir>/node_modules/@decaf-ts/core/lib/cjs/ram/index.cjs",
   },
   collectCoverage: false,
   coverageDirectory: "./workdocs/reports/coverage",

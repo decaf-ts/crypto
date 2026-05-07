@@ -5,37 +5,42 @@
   "type": "module",
   "exports": {
     "./browser": {
-      "require": "./lib/browser/index.cjs",
+      "types": "./lib/types/browser/index.d.ts",
       "import": "./lib/esm/browser/index.js",
-      "types": "./lib/browser/index.d.ts"
+      "require": "./lib/cjs/browser/index.cjs",
+      "default": "./lib/esm/browser/index.js"
     },
     "./integration": {
-      "require": "./lib/integration/index.cjs",
+      "types": "./lib/types/integration/index.d.ts",
       "import": "./lib/esm/integration/index.js",
-      "types": "./lib/integration/index.d.ts"
+      "require": "./lib/cjs/integration/index.cjs",
+      "default": "./lib/esm/integration/index.js"
     },
     "./node": {
-      "require": "./lib/node/index.cjs",
+      "types": "./lib/types/node/index.d.ts",
       "import": "./lib/esm/node/index.js",
-      "types": "./lib/node/index.d.ts"
+      "require": "./lib/cjs/node/index.cjs",
+      "default": "./lib/esm/node/index.js"
     },
     "./jwt": {
-      "require": "./lib/jwt/index.cjs",
-      "import": "./lib/esm/jtw/index.js",
-      "types": "./lib/jtw/index.d.ts"
+      "types": "./lib/types/jwt/index.d.ts",
+      "import": "./lib/esm/jwt/index.js",
+      "require": "./lib/cjs/jwt/index.cjs",
+      "default": "./lib/esm/jwt/index.js"
     },
     "./common": {
-      "require": "./lib/common/index.cjs",
+      "types": "./lib/types/common/index.d.ts",
       "import": "./lib/esm/common/index.js",
-      "types": "./lib/common/index.d.ts"
+      "require": "./lib/cjs/common/index.cjs",
+      "default": "./lib/esm/common/index.js"
     }
   },
-  "types": "lib/index.d.ts",
-  "main": "lib/index.cjs",
+  "types": "./lib/types/index.d.ts",
+  "main": "./lib/cjs/index.cjs",
   "bin": {
     "decaf-crypto": "./lib/bin/cli.cjs"
   },
-  "browser": "lib/esm/browser/index.js",
+  "browser": "./lib/esm/browser/index.js",
   "scripts": {
     "do-install": "NPM_TOKEN=$(cat .npmtoken) npm install",
     "update-dependencies": "PREFIX=\"decaf-ts\"; npm ls | grep \"$PREFIX\" | awk -F/ '{print $NF}' | sed 's/@.*//' | xargs -I package npm update @\"$PREFIX\"/package",
@@ -98,5 +103,7 @@
     "@decaf-ts/db-decorators": "latest",
     "@decaf-ts/decoration": "latest",
     "@decaf-ts/decorator-validation": "latest"
-  }
+  },
+  "module": "./lib/esm/index.js",
+  "sideEffects": false
 }
