@@ -5,37 +5,62 @@
   "type": "module",
   "exports": {
     "./browser": {
-      "types": "./lib/types/browser/index.d.ts",
-      "import": "./lib/esm/browser/index.js",
-      "require": "./lib/cjs/browser/index.cjs",
+      "import": {
+        "types": "./lib/types/browser/index.d.mts",
+        "default": "./lib/esm/browser/index.js"
+      },
+      "require": {
+        "types": "./lib/types/browser/index.d.cts",
+        "default": "./lib/cjs/browser/index.cjs"
+      },
       "default": "./lib/esm/browser/index.js"
     },
     "./integration": {
-      "types": "./lib/types/integration/index.d.ts",
-      "import": "./lib/esm/integration/index.js",
-      "require": "./lib/cjs/integration/index.cjs",
+      "import": {
+        "types": "./lib/types/integration/index.d.mts",
+        "default": "./lib/esm/integration/index.js"
+      },
+      "require": {
+        "types": "./lib/types/integration/index.d.cts",
+        "default": "./lib/cjs/integration/index.cjs"
+      },
       "default": "./lib/esm/integration/index.js"
     },
     "./node": {
-      "types": "./lib/types/node/index.d.ts",
-      "import": "./lib/esm/node/index.js",
-      "require": "./lib/cjs/node/index.cjs",
+      "import": {
+        "types": "./lib/types/node/index.d.mts",
+        "default": "./lib/esm/node/index.js"
+      },
+      "require": {
+        "types": "./lib/types/node/index.d.cts",
+        "default": "./lib/cjs/node/index.cjs"
+      },
       "default": "./lib/esm/node/index.js"
     },
     "./jwt": {
-      "types": "./lib/types/jwt/index.d.ts",
-      "import": "./lib/esm/jwt/index.js",
-      "require": "./lib/cjs/jwt/index.cjs",
+      "import": {
+        "types": "./lib/types/jwt/index.d.mts",
+        "default": "./lib/esm/jwt/index.js"
+      },
+      "require": {
+        "types": "./lib/types/jwt/index.d.cts",
+        "default": "./lib/cjs/jwt/index.cjs"
+      },
       "default": "./lib/esm/jwt/index.js"
     },
     "./common": {
-      "types": "./lib/types/common/index.d.ts",
-      "import": "./lib/esm/common/index.js",
-      "require": "./lib/cjs/common/index.cjs",
+      "import": {
+        "types": "./lib/types/common/index.d.mts",
+        "default": "./lib/esm/common/index.js"
+      },
+      "require": {
+        "types": "./lib/types/common/index.d.cts",
+        "default": "./lib/cjs/common/index.cjs"
+      },
       "default": "./lib/esm/common/index.js"
     }
   },
-  "types": "./lib/types/index.d.ts",
+  "types": "./lib/types/index.d.mts",
   "main": "./lib/cjs/index.cjs",
   "bin": {
     "decaf-crypto": "./lib/bin/cli.cjs"
