@@ -105,5 +105,8 @@
     "@decaf-ts/decorator-validation": "latest"
   },
   "module": "./lib/esm/index.js",
-  "sideEffects": false
+  "sideEffects": [
+    "./lib/esm/overrides/index.js",
+    "./lib/cjs/overrides/index.cjs"
+  ]
 }
