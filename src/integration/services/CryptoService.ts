@@ -9,7 +9,7 @@ import { Crypto } from "../../node/Crypto";
 import { getCrypto } from "../../common/crypto";
 import { getSubtle } from "../../common/subtle-crypto";
 import { InternalError } from "@decaf-ts/db-decorators";
-import type { AesGcmParams } from "../../common/aes-types";
+
 
 export interface CryptoServiceConfig {
   /**
@@ -143,11 +143,115 @@ export class CryptoService extends ClientBasedService<typeof Crypto, CryptoServi
   }
 
   /**
-   * Encrypt a payload using AES-GCM.
+   * Encrypt a payload using AES-GCM with automatic key derivation from secret.
    * @param payload plaintext to encrypt
-   * @param keyId identifier for the encryption key
-   * @param key base64-encoded encryption key
-   * @returns object with encrypted data (base64) and metadata
+   * @param secret secret string to derive encryption key from
+   * @returns object with encrypted data (base64), IV, and salt for decryption
+   */
+  async encrypt(
+    payload: string,
+    secret: string
+  ): Promise<{
+    encryptedData: string;
+    iv: string;
+    salt: string;
+  }> {
+    try {
+      const derivedKey = await this.deriveKeyFromSecret(secret);
+      const { key, salt } = this.extractKeyFromDerivedKey(derivedKey);
+      const keyBuffer = Buffer.from(key, "base64");
+
+      const subtle = await getSubtle();
+      const iv = this.genSalt(this.ivLength);
+      const algorithm = { name: "AES-GCM", ...this.aesGcmAlgorithm };
+      const importedKey = await subtle.importKey(
+        "raw",
+        keyBuffer,
+        algorithm,
+        false,
+        ["encrypt"]
+      );
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(payload);
+      const encryptedBuffer = await subtle.encrypt(
+        {
+          ...algorithm,
+          iv: iv,
+        },
+        importedKey,
+        data
+      );
+
+      const encryptedBytes = new Uint8Array(encryptedBuffer);
+      const combined = new Uint8Array(this.ivLength + encryptedBytes.length);
+      combined.set(iv);
+      combined.set(encryptedBytes, this.ivLength);
+
+      return {
+        encryptedData: Buffer.from(combined).toString("base64"),
+        iv: iv.toString("base64"),
+        salt,
+      };
+    } catch (error) {
+      throw new InternalError(
+        `Failed to encrypt payload: ${(error as Error).message}`
+      );
+    }
+  }
+
+  /**
+   * Decrypt an encrypted payload using AES-GCM with automatic key derivation from secret.
+   * @param encryptedData base64-encoded encrypted data (IV + ciphertext)
+   * @param secret secret string to derive decryption key from
+   * @param salt base64-encoded salt used during encryption (required for key derivation)
+   * @returns decrypted plaintext string
+   */
+  async decrypt(
+    encryptedData: string,
+    secret: string,
+    salt: string
+  ): Promise<string> {
+    try {
+      const derivedKey = await this.deriveKeyFromSecret(secret, salt);
+      const { key } = this.extractKeyFromDerivedKey(derivedKey);
+
+      const subtle = await getSubtle();
+      const combined = Buffer.from(encryptedData, "base64");
+      const iv = combined.slice(0, this.ivLength);
+      const cipherText = combined.slice(this.ivLength);
+
+      const keyBuffer = Buffer.from(key, "base64");
+      const algorithm = { name: "AES-GCM", ...this.aesGcmAlgorithm };
+      const importedKey = await subtle.importKey(
+        "raw",
+        keyBuffer,
+        algorithm,
+        false,
+        ["decrypt"]
+      );
+
+      const decryptedBuffer = await subtle.decrypt(
+        {
+          ...algorithm,
+          iv: iv,
+        },
+        importedKey,
+        cipherText
+      );
+
+      const decoder = new TextDecoder();
+      return decoder.decode(decryptedBuffer);
+    } catch (error) {
+      throw new InternalError(
+        `Failed to decrypt payload: ${(error as Error).message}`
+      );
+    }
+  }
+
+  /**
+   * Low-level encrypt with pre-derived key (for advanced use cases).
+   * @internal
    */
   async encryptPayload(
     payload: string,
@@ -201,10 +305,8 @@ export class CryptoService extends ClientBasedService<typeof Crypto, CryptoServi
   }
 
   /**
-   * Decrypt an encrypted payload using AES-GCM.
-   * @param encryptedData base64-encoded encrypted data (IV + ciphertext)
-   * @param key base64-encoded decryption key
-   * @returns decrypted plaintext string
+   * Low-level decrypt with pre-derived key (for advanced use cases).
+   * @internal
    */
   async decryptPayload(encryptedData: string, key: string): Promise<string> {
     try {

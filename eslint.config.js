@@ -19,6 +19,7 @@ export default [
       "!tests/**/*",
       "tests/bundling/**/*",
       "tests/web/**/*",
+      "jest.config.cjs",
     ],
   },
   { languageOptions: { globals: globals.browser } },

@@ -4,7 +4,7 @@ import * as os from "os";
 import * as path from "path";
 import { Obfuscation } from "../../src/node/Obfuscation";
 import { CryptoService } from "../../src/integration/services/CryptoService";
-import { getSubtle } from "../../src/common/subtle-crypto";
+
 
 // Mock fs module to allow spying on its methods without "Cannot redefine property" errors
 jest.mock("fs", () => {
@@ -139,7 +139,6 @@ describe("Crypto CLI", () => {
       const parsed = JSON.parse(loggedOutput);
       expect(parsed.encryptedData).toBeDefined();
       expect(parsed.iv).toBeDefined();
-      expect(parsed.keyId).toBeDefined();
       expect(parsed.salt).toBeDefined();
 
       const cryptoService = new CryptoService();
@@ -185,7 +184,6 @@ describe("Crypto CLI", () => {
       const parsed = JSON.parse(writtenOutput);
       expect(parsed.encryptedData).toBeDefined();
       expect(parsed.iv).toBeDefined();
-      expect(parsed.keyId).toBeDefined();
       expect(parsed.salt).toBeDefined();
 
       const cryptoService = new CryptoService();
@@ -232,7 +230,6 @@ describe("Crypto CLI", () => {
       const parsed = JSON.parse(writtenOutput);
       expect(parsed.encryptedData).toBeDefined();
       expect(parsed.iv).toBeDefined();
-      expect(parsed.keyId).toBeDefined();
       expect(parsed.salt).toBeDefined();
 
       const cryptoService = new CryptoService();
@@ -282,7 +279,6 @@ describe("Crypto CLI", () => {
       const parsed = JSON.parse(writtenOutput);
       expect(parsed.encryptedData).toBeDefined();
       expect(parsed.iv).toBeDefined();
-      expect(parsed.keyId).toBeDefined();
       expect(parsed.salt).toBeDefined();
 
       const cryptoService = new CryptoService();
@@ -363,14 +359,11 @@ describe("Crypto CLI", () => {
         aesGcm: { length: parseInt(keyLength, 10) },
         ivLength: parseInt(ivLength, 10),
       });
-      const derivedKey = await cryptoService.deriveKeyFromSecret(secret);
-      const { key, salt } = cryptoService.extractKeyFromDerivedKey(derivedKey);
-      const { encryptedData, metadata } = await cryptoService.encryptPayload(originalData, "test-key", key);
+      const result = await cryptoService.encrypt(originalData, secret);
       const encryptedJson = JSON.stringify({
-        encryptedData,
-        iv: metadata.iv,
-        keyId: metadata.keyId,
-        salt,
+        encryptedData: result.encryptedData,
+        iv: result.iv,
+        salt: result.salt,
       });
 
       await program.parseAsync(
@@ -398,14 +391,11 @@ describe("Crypto CLI", () => {
         aesGcm: { length: parseInt(keyLength, 10) },
         ivLength: parseInt(ivLength, 10),
       });
-      const derivedKey = await cryptoService.deriveKeyFromSecret(secret);
-      const { key, salt } = cryptoService.extractKeyFromDerivedKey(derivedKey);
-      const { encryptedData, metadata } = await cryptoService.encryptPayload(originalData, "test-key", key);
+      const result = await cryptoService.encrypt(originalData, secret);
       const encryptedJson = JSON.stringify({
-        encryptedData,
-        iv: metadata.iv,
-        keyId: metadata.keyId,
-        salt,
+        encryptedData: result.encryptedData,
+        iv: result.iv,
+        salt: result.salt,
       });
       const outFile = path.join(tempDir, "output.txt");
       await program.parseAsync(

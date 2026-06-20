@@ -1,5 +1,4 @@
 import { CryptoService } from "../../src/integration/services/CryptoService";
-import { getSubtle } from "../../src/common/crypto";
 
 describe("CryptoService", () => {
   let cryptoService: CryptoService;
@@ -93,71 +92,90 @@ describe("CryptoService", () => {
     });
   });
 
-  describe("encryptPayload / decryptPayload", () => {
-    it("should encrypt and decrypt a string payload", async () => {
+  describe("encrypt / decrypt (simple API)", () => {
+    it("should encrypt and decrypt a string payload with secret", async () => {
       const payload = "This is a secret message";
+      const secret = "my-secret-password";
       
-      const { encryptedData, metadata } = await cryptoService.encryptPayload(payload, "key-1", testKey);
+      const result = await cryptoService.encrypt(payload, secret);
       
-      expect(encryptedData).toBeDefined();
-      expect(metadata).toBeDefined();
-      expect(metadata.keyId).toBe("key-1");
-      expect(metadata.iv).toBeDefined();
+      expect(result.encryptedData).toBeDefined();
+      expect(result.iv).toBeDefined();
+      expect(result.salt).toBeDefined();
       
       // Verify encryption produced different output
-      expect(encryptedData).not.toBe(payload);
-      expect(encryptedData).toContain("=="); // base64 padding
+      expect(result.encryptedData).not.toBe(payload);
+      expect(result.encryptedData).toContain("=="); // base64 padding
       
       // Decrypt and verify
-      const decrypted = await cryptoService.decryptPayload(encryptedData, testKey);
+      const decrypted = await cryptoService.decrypt(result.encryptedData, secret, result.salt);
       expect(decrypted).toBe(payload);
     });
 
     it("should encrypt and decrypt JSON payload", async () => {
       const payload = JSON.stringify({ apiKey: "abc123", secret: "xyz789" });
+      const secret = "another-secret";
       
-      const { encryptedData } = await cryptoService.encryptPayload(payload, "key-2", testKey);
-      const decrypted = await cryptoService.decryptPayload(encryptedData, testKey);
+      const result = await cryptoService.encrypt(payload, secret);
+      const decrypted = await cryptoService.decrypt(result.encryptedData, secret, result.salt);
       
       expect(JSON.parse(decrypted)).toEqual(JSON.parse(payload));
     });
 
-    it("should fail decryption with wrong key", async () => {
+    it("should fail decryption with wrong secret", async () => {
       const payload = "secret data";
-      const { encryptedData } = await cryptoService.encryptPayload(payload, "key-3", testKey);
+      const secret = "correct-secret";
+      const wrongSecret = "wrong-secret";
       
-      const wrongKey = Buffer.alloc(32, "wrong-key-value!!!").toString("base64");
+      const result = await cryptoService.encrypt(payload, secret);
       
-      await expect(cryptoService.decryptPayload(encryptedData, wrongKey))
+      await expect(cryptoService.decrypt(result.encryptedData, wrongSecret, result.salt))
         .rejects.toThrow();
     });
 
     it("should fail decryption with tampered data", async () => {
       const payload = "secret data";
-      const { encryptedData } = await cryptoService.encryptPayload(payload, "key-4", testKey);
+      const secret = "my-secret";
+      
+      const result = await cryptoService.encrypt(payload, secret);
       
       // Tamper with the encrypted data
-      const tampered = encryptedData.slice(0, -4) + "====";
+      const tampered = result.encryptedData.slice(0, -4) + "====";
       
-      await expect(cryptoService.decryptPayload(tampered, testKey))
+      await expect(cryptoService.decrypt(tampered, secret, result.salt))
         .rejects.toThrow();
     });
 
-    it("should encrypt different IVs for same payload", async () => {
+    it("should produce different IVs for same payload", async () => {
       const payload = "same payload";
+      const secret = "same-secret";
       
-      const result1 = await cryptoService.encryptPayload(payload, "key-5", testKey);
-      const result2 = await cryptoService.encryptPayload(payload, "key-5", testKey);
+      const result1 = await cryptoService.encrypt(payload, secret);
+      const result2 = await cryptoService.encrypt(payload, secret);
       
       // IVs should be different
-      expect(result1.metadata.iv).not.toBe(result2.metadata.iv);
+      expect(result1.iv).not.toBe(result2.iv);
       
       // Both should decrypt correctly
-      const decrypted1 = await cryptoService.decryptPayload(result1.encryptedData, testKey);
-      const decrypted2 = await cryptoService.decryptPayload(result2.encryptedData, testKey);
+      const decrypted1 = await cryptoService.decrypt(result1.encryptedData, secret, result1.salt);
+      const decrypted2 = await cryptoService.decrypt(result2.encryptedData, secret, result2.salt);
       
       expect(decrypted1).toBe(payload);
       expect(decrypted2).toBe(payload);
+    });
+  });
+
+  describe("encryptPayload / decryptPayload (low-level API)", () => {
+    it("should encrypt and decrypt with pre-derived key", async () => {
+      const payload = "This is a secret message";
+      const { encryptedData, metadata } = await cryptoService.encryptPayload(payload, "key-1", testKey);
+      
+      expect(encryptedData).toBeDefined();
+      expect(metadata.keyId).toBe("key-1");
+      expect(metadata.iv).toBeDefined();
+      
+      const decrypted = await cryptoService.decryptPayload(encryptedData, testKey);
+      expect(decrypted).toBe(payload);
     });
   });
 
@@ -166,24 +184,66 @@ describe("CryptoService", () => {
       const secret = "my-master-secret";
       const payload = "sensitive-data-to-protect";
       
-      // Derive key from secret
       const derivedKey = await cryptoService.deriveKeyFromSecret(secret);
-      
-      // Extract salt and key
       const { salt, key } = cryptoService.extractKeyFromDerivedKey(derivedKey);
-      
-      // Encrypt payload
       const { encryptedData } = await cryptoService.encryptPayload(payload, "derived-key", key);
-      
-      // Decrypt payload
       const decrypted = await cryptoService.decryptPayload(encryptedData, key);
       
       expect(decrypted).toBe(payload);
       
-      // Verify salt is the first 16 bytes of derived key
       const derivedBuffer = Buffer.from(derivedKey, "base64");
       const extractedSalt = derivedBuffer.slice(0, 16).toString("base64");
       expect(extractedSalt).toBe(salt);
+    });
+
+    it("should use simple encrypt/decrypt API", async () => {
+      const secret = "simple-secret";
+      const payload = "simple-payload";
+      
+      const result = await cryptoService.encrypt(payload, secret);
+      expect(result.encryptedData).toBeDefined();
+      expect(result.iv).toBeDefined();
+      expect(result.salt).toBeDefined();
+      
+      const decrypted = await cryptoService.decrypt(result.encryptedData, secret, result.salt);
+      expect(decrypted).toBe(payload);
+    });
+
+    it("should demonstrate .for() API for switching between configs", async () => {
+      const secret = "config-switch-test";
+      const payload = "test-payload";
+      const iterations = 50;
+
+      const mixedConfigTimeStart = Date.now();
+      const baseService = new CryptoService();
+      await baseService.boot({ aesGcm: { length: 256 } });
+      
+      for (let i = 0; i < iterations; i++) {
+        if (i % 2 === 0) {
+          await baseService.for({ aesGcm: { length: 128 } }).encrypt(payload, secret);
+        } else {
+          await baseService.for({ aesGcm: { length: 192 } }).encrypt(payload, secret);
+        }
+      }
+      const mixedConfigTime = Date.now() - mixedConfigTimeStart;
+
+      const singleConfigTimeStart = Date.now();
+      const service128 = new CryptoService();
+      await service128.boot({ aesGcm: { length: 128 } });
+      const service256 = new CryptoService();
+      await service256.boot({ aesGcm: { length: 256 } });
+      
+      for (let i = 0; i < iterations; i++) {
+        if (i % 2 === 0) {
+          await service128.encrypt(payload, secret);
+        } else {
+          await service256.encrypt(payload, secret);
+        }
+      }
+      const singleConfigTime = Date.now() - singleConfigTimeStart;
+
+      expect(mixedConfigTime).toBeLessThanOrEqual(singleConfigTime + 50);
+      console.log(`Using .for() to switch configs: ${mixedConfigTime}ms vs ${singleConfigTime}ms for separate services`);
     });
   });
 

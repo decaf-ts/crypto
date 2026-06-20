@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { Logging, Logger } from "@decaf-ts/logging";
 import fs from "fs";
 import path from "path";
-import { getSubtle } from "./common/subtle-crypto";
+
 import { Obfuscation } from "./node/Obfuscation";
 import { CryptoService } from "./integration/services/CryptoService";
 import { InternalError } from "@decaf-ts/db-decorators";
@@ -285,23 +285,14 @@ const encryptCmd = new Command("encrypt")
         ivLength: parseInt(ivLength, 10),
       });
 
-      // Derive key from secret using the service
-      const derivedKey = await cryptoService.deriveKeyFromSecret(secret);
-      const { key, salt } = cryptoService.extractKeyFromDerivedKey(derivedKey);
-
-      // Encrypt the content
-      const { encryptedData, metadata } = await cryptoService.encryptPayload(
-        contentToProcess,
-        "cli-encrypt",
-        key
-      );
+      // Encrypt the content using simple API
+      const result = await cryptoService.encrypt(contentToProcess, secret);
 
       // Output includes IV and salt for decryption
       const output = JSON.stringify({
-        encryptedData,
-        iv: metadata.iv,
-        keyId: metadata.keyId,
-        salt,
+        encryptedData: result.encryptedData,
+        iv: result.iv,
+        salt: result.salt,
       });
 
       if (outputPath) {
@@ -382,7 +373,7 @@ const decryptCmd = new Command("decrypt")
       let parsed: { encryptedData: string; iv: string; keyId?: string; salt?: string };
       try {
         parsed = JSON.parse(encryptedInput);
-      } catch (e) {
+      } catch {
         throw new InternalError("Invalid encrypted data format. Expected JSON with encryptedData and iv fields.");
       }
 
@@ -396,13 +387,12 @@ const decryptCmd = new Command("decrypt")
         ivLength: parseInt(ivLength, 10),
       });
 
-      // Derive key from secret using the salt from encryption
-      const salt = parsed.salt || undefined;
-      const derivedKey = await cryptoService.deriveKeyFromSecret(secret, salt);
-      const { key } = cryptoService.extractKeyFromDerivedKey(derivedKey);
-
-      // Decrypt the content
-      const decryptedContent = await cryptoService.decryptPayload(parsed.encryptedData, key);
+      // Decrypt the content using simple API with salt
+      const salt = parsed.salt;
+      if (!salt) {
+        throw new InternalError("Missing salt in encrypted data. Salt is required for decryption.");
+      }
+      const decryptedContent = await cryptoService.decrypt(parsed.encryptedData, secret, salt);
 
       if (outputPath) {
         fs.writeFileSync(outputPath, decryptedContent);
