@@ -3,8 +3,8 @@ import createCliProgram from "../../src/cli-module";
 import * as os from "os";
 import * as path from "path";
 import { Obfuscation } from "../../src/node/Obfuscation";
-import { encryptContent, decryptContent, getDerivedKey } from "../../src/common/utils";
-import { getSubtle } from "../../src/common/crypto";
+import { CryptoService } from "../../src/integration/services/CryptoService";
+import { getSubtle } from "../../src/common/subtle-crypto";
 
 // Mock fs module to allow spying on its methods without "Cannot redefine property" errors
 jest.mock("fs", () => {
@@ -113,9 +113,9 @@ describe("Crypto CLI", () => {
   });
 
   describe("encrypt command", () => {
-    const secret = "test-secret-key-for-aes256-ok!!!" // exactly 32 bytes for AES-256
-    const algorithm = "AES-GCM";
+    const secret = "test-secret-key-for-aes256-ok!!!"; // exactly 32 bytes for AES-256
     const keyLength = "256";
+    const ivLength = "12";
 
     it("should encrypt --data to console", async () => {
       const testData = "hello world";
@@ -126,20 +126,30 @@ describe("Crypto CLI", () => {
           testData,
           "--secret",
           secret,
-          "--alg",
-          algorithm,
           "--key-length",
           keyLength,
+          "--iv-length",
+          ivLength,
         ],
         { from: "user" }
       );
-      expect(mockLog).toHaveBeenCalledWith(expect.any(String)); // Should be a hex string
-      const loggedHex = mockLog.mock.calls[0][0];
+      expect(mockLog).toHaveBeenCalledWith(expect.any(String));
+      const loggedOutput = mockLog.mock.calls[0][0];
+      
+      const parsed = JSON.parse(loggedOutput);
+      expect(parsed.encryptedData).toBeDefined();
+      expect(parsed.iv).toBeDefined();
+      expect(parsed.keyId).toBeDefined();
+      expect(parsed.salt).toBeDefined();
 
-      // Verify that the logged output can be decrypted to the original data
-      const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
-      const decrypted = await decryptContent(subtle, derivedKey, algorithm, loggedHex);
+      const cryptoService = new CryptoService();
+      await cryptoService.boot({
+        aesGcm: { length: parseInt(keyLength, 10) },
+        ivLength: parseInt(ivLength, 10),
+      });
+      const derivedKey = await cryptoService.deriveKeyFromSecret(secret, parsed.salt);
+      const { key } = cryptoService.extractKeyFromDerivedKey(derivedKey);
+      const decrypted = await cryptoService.decryptPayload(parsed.encryptedData, key);
       expect(decrypted).toBe(testData);
       expect(mockProcessExit).not.toHaveBeenCalled();
     });
@@ -156,28 +166,36 @@ describe("Crypto CLI", () => {
           outFile,
           "--secret",
           secret,
-          "--alg",
-          algorithm,
           "--key-length",
           keyLength,
+          "--iv-length",
+          ivLength,
         ],
         { from: "user" }
       );
-      expect(fs.writeFileSync).toHaveBeenCalledWith(outFile, expect.any(String)); // Should write a hex string
-      const writtenHex = fs.readFileSync(outFile, "utf8");
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        outFile,
+        expect.any(String)
+      );
+      const writtenOutput = fs.readFileSync(outFile, "utf8");
       expect(mockLog).toHaveBeenCalledWith(
         expect.stringContaining(`Encrypted content written to ${outFile}.`)
       );
 
-      // Verify that the written content can be decrypted to the original data
-      const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
-      const decrypted = await decryptContent(
-        subtle,
-        derivedKey,
-        algorithm,
-        writtenHex
-      );
+      const parsed = JSON.parse(writtenOutput);
+      expect(parsed.encryptedData).toBeDefined();
+      expect(parsed.iv).toBeDefined();
+      expect(parsed.keyId).toBeDefined();
+      expect(parsed.salt).toBeDefined();
+
+      const cryptoService = new CryptoService();
+      await cryptoService.boot({
+        aesGcm: { length: parseInt(keyLength, 10) },
+        ivLength: parseInt(ivLength, 10),
+      });
+      const derivedKey = await cryptoService.deriveKeyFromSecret(secret, parsed.salt);
+      const { key } = cryptoService.extractKeyFromDerivedKey(derivedKey);
+      const decrypted = await cryptoService.decryptPayload(parsed.encryptedData, key);
       expect(decrypted).toBe(testData);
       expect(mockProcessExit).not.toHaveBeenCalled();
     });
@@ -194,30 +212,37 @@ describe("Crypto CLI", () => {
           inFile,
           "--secret",
           secret,
-          "--alg",
-          algorithm,
           "--key-length",
           keyLength,
+          "--iv-length",
+          ivLength,
         ],
         { from: "user" }
       );
       expect(fs.readFileSync).toHaveBeenCalledWith(inFile, "utf-8");
-      // Check the SECOND call to writeFileSync (the one from the CLI)
-      expect(fs.writeFileSync.mock.calls[1][0]).toBe(inFile);
-      expect(fs.writeFileSync.mock.calls[1][1]).toEqual(expect.any(String)); // Should write a hex string
-      const writtenHex = fs.readFileSync(inFile, "utf8");
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        inFile,
+        expect.stringContaining("encryptedData")
+      );
+      const writtenOutput = fs.readFileSync(inFile, "utf8");
       expect(mockLog).toHaveBeenCalledWith(
         expect.stringContaining(`Encrypted content written to ${inFile}.`)
       );
-      // Verify that the written content can be decrypted to the original data
-      const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
-      const decrypted = await decryptContent(
-        subtle,
-        derivedKey,
-        algorithm,
-        writtenHex
-      );
+
+      const parsed = JSON.parse(writtenOutput);
+      expect(parsed.encryptedData).toBeDefined();
+      expect(parsed.iv).toBeDefined();
+      expect(parsed.keyId).toBeDefined();
+      expect(parsed.salt).toBeDefined();
+
+      const cryptoService = new CryptoService();
+      await cryptoService.boot({
+        aesGcm: { length: parseInt(keyLength, 10) },
+        ivLength: parseInt(ivLength, 10),
+      });
+      const derivedKey = await cryptoService.deriveKeyFromSecret(secret, parsed.salt);
+      const { key } = cryptoService.extractKeyFromDerivedKey(derivedKey);
+      const decrypted = await cryptoService.decryptPayload(parsed.encryptedData, key);
       expect(decrypted).toBe(fileContent);
       expect(mockProcessExit).not.toHaveBeenCalled();
     });
@@ -226,7 +251,7 @@ describe("Crypto CLI", () => {
       const inFile = path.join(tempDir, "input.txt");
       const outFile = path.join(tempDir, "output.txt");
       const fileContent = "file content";
-      fs.writeFileSync(inFile, fileContent); // Create the actual input file
+      fs.writeFileSync(inFile, fileContent);
 
       await program.parseAsync(
         [
@@ -237,30 +262,37 @@ describe("Crypto CLI", () => {
           outFile,
           "--secret",
           secret,
-          "--alg",
-          algorithm,
           "--key-length",
           keyLength,
+          "--iv-length",
+          ivLength,
         ],
         { from: "user" }
       );
       expect(fs.readFileSync).toHaveBeenCalledWith(inFile, "utf-8");
-      // Check the SECOND call to writeFileSync (the one from the CLI writing to outFile)
-      expect(fs.writeFileSync.mock.calls[1][0]).toBe(outFile);
-      expect(fs.writeFileSync.mock.calls[1][1]).toEqual(expect.any(String)); // Should write a hex string
-      const writtenHex = fs.readFileSync(outFile, "utf8");
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        outFile,
+        expect.stringContaining("encryptedData")
+      );
+      const writtenOutput = fs.readFileSync(outFile, "utf8");
       expect(mockLog).toHaveBeenCalledWith(
         expect.stringContaining(`Encrypted content written to ${outFile}.`)
       );
-      // Verify that the written content can be decrypted to the original data
-      const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
-      const decrypted = await decryptContent(
-        subtle,
-        derivedKey,
-        algorithm,
-        writtenHex
-      );
+
+      const parsed = JSON.parse(writtenOutput);
+      expect(parsed.encryptedData).toBeDefined();
+      expect(parsed.iv).toBeDefined();
+      expect(parsed.keyId).toBeDefined();
+      expect(parsed.salt).toBeDefined();
+
+      const cryptoService = new CryptoService();
+      await cryptoService.boot({
+        aesGcm: { length: parseInt(keyLength, 10) },
+        ivLength: parseInt(ivLength, 10),
+      });
+      const derivedKey = await cryptoService.deriveKeyFromSecret(secret, parsed.salt);
+      const { key } = cryptoService.extractKeyFromDerivedKey(derivedKey);
+      const decrypted = await cryptoService.decryptPayload(parsed.encryptedData, key);
       expect(decrypted).toBe(fileContent);
       expect(mockProcessExit).not.toHaveBeenCalled();
     });
@@ -301,10 +333,17 @@ describe("Crypto CLI", () => {
     });
 
     it("should exit with error on encryption failure", async () => {
-      // Use an invalid algorithm to trigger a real encryption error
       await expect(
         program.parseAsync(
-          ["encrypt", "--data", "test", "--secret", secret, "--alg", "INVALID-ALG"],
+          [
+            "encrypt",
+            "--data",
+            "test",
+            "--secret",
+            secret,
+            "--key-length",
+            "999",
+          ],
           { from: "user" }
         )
       ).rejects.toThrow("process.exit: 1");
@@ -313,31 +352,38 @@ describe("Crypto CLI", () => {
   });
 
   describe("decrypt command", () => {
-    const secret = "test-secret-key-for-aes256-ok!!!" // exactly 32 bytes for AES-256
-    const algorithm = "AES-GCM";
+    const secret = "test-secret-key-for-aes256-ok!!!"; // exactly 32 bytes for AES-256
     const keyLength = "256";
+    const ivLength = "12";
 
     it("should decrypt --data to console", async () => {
       const originalData = "hello world";
-      const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
-      const encryptedData = await encryptContent(
-        subtle,
-        derivedKey, // Use derivedKey here
-        algorithm,
-        originalData
-      );
+      const cryptoService = new CryptoService();
+      await cryptoService.boot({
+        aesGcm: { length: parseInt(keyLength, 10) },
+        ivLength: parseInt(ivLength, 10),
+      });
+      const derivedKey = await cryptoService.deriveKeyFromSecret(secret);
+      const { key, salt } = cryptoService.extractKeyFromDerivedKey(derivedKey);
+      const { encryptedData, metadata } = await cryptoService.encryptPayload(originalData, "test-key", key);
+      const encryptedJson = JSON.stringify({
+        encryptedData,
+        iv: metadata.iv,
+        keyId: metadata.keyId,
+        salt,
+      });
+
       await program.parseAsync(
         [
           "decrypt",
           "--data",
-          encryptedData,
+          encryptedJson,
           "--secret",
           secret,
-          "--alg",
-          algorithm,
           "--key-length",
           keyLength,
+          "--iv-length",
+          ivLength,
         ],
         { from: "user" }
       );
@@ -347,28 +393,34 @@ describe("Crypto CLI", () => {
 
     it("should decrypt --data to --out file", async () => {
       const originalData = "hello world";
-      const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
-      const encryptedData = await encryptContent(
-        subtle,
-        derivedKey, // Use derivedKey here
-        algorithm,
-        originalData
-      );
+      const cryptoService = new CryptoService();
+      await cryptoService.boot({
+        aesGcm: { length: parseInt(keyLength, 10) },
+        ivLength: parseInt(ivLength, 10),
+      });
+      const derivedKey = await cryptoService.deriveKeyFromSecret(secret);
+      const { key, salt } = cryptoService.extractKeyFromDerivedKey(derivedKey);
+      const { encryptedData, metadata } = await cryptoService.encryptPayload(originalData, "test-key", key);
+      const encryptedJson = JSON.stringify({
+        encryptedData,
+        iv: metadata.iv,
+        keyId: metadata.keyId,
+        salt,
+      });
       const outFile = path.join(tempDir, "output.txt");
       await program.parseAsync(
         [
           "decrypt",
           "--data",
-          encryptedData,
+          encryptedJson,
           "--out",
           outFile,
           "--secret",
           secret,
-          "--alg",
-          algorithm,
           "--key-length",
           keyLength,
+          "--iv-length",
+          ivLength,
         ],
         { from: "user" }
       );
@@ -376,22 +428,28 @@ describe("Crypto CLI", () => {
       expect(mockLog).toHaveBeenCalledWith(
         expect.stringContaining(`Decrypted content written to ${outFile}.`)
       );
-      expect(fs.readFileSync(outFile, "utf8")).toBe(originalData); // Verify actual file content
+      expect(fs.readFileSync(outFile, "utf8")).toBe(originalData);
       expect(mockProcessExit).not.toHaveBeenCalled();
     });
 
     it("should decrypt --file in place", async () => {
       const originalContent = "file content";
-      const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
-      const encryptedFileContent = await encryptContent(
-        subtle,
-        derivedKey, // Use derivedKey here
-        algorithm,
-        originalContent
-      );
+      const cryptoService = new CryptoService();
+      await cryptoService.boot({
+        aesGcm: { length: parseInt(keyLength, 10) },
+        ivLength: parseInt(ivLength, 10),
+      });
+      const derivedKey = await cryptoService.deriveKeyFromSecret(secret);
+      const { key, salt } = cryptoService.extractKeyFromDerivedKey(derivedKey);
+      const { encryptedData, metadata } = await cryptoService.encryptPayload(originalContent, "test-key", key);
+      const encryptedJson = JSON.stringify({
+        encryptedData,
+        iv: metadata.iv,
+        keyId: metadata.keyId,
+        salt,
+      });
       const inFile = path.join(tempDir, "input.txt");
-      fs.writeFileSync(inFile, encryptedFileContent); // Create the actual encrypted file
+      fs.writeFileSync(inFile, encryptedJson);
 
       await program.parseAsync(
         [
@@ -400,10 +458,10 @@ describe("Crypto CLI", () => {
           inFile,
           "--secret",
           secret,
-          "--alg",
-          algorithm,
           "--key-length",
           keyLength,
+          "--iv-length",
+          ivLength,
         ],
         { from: "user" }
       );
@@ -412,23 +470,29 @@ describe("Crypto CLI", () => {
       expect(mockLog).toHaveBeenCalledWith(
         expect.stringContaining(`Decrypted content written to ${inFile}.`)
       );
-      expect(fs.readFileSync(inFile, "utf8")).toBe(originalContent); // Verify actual file content
+      expect(fs.readFileSync(inFile, "utf8")).toBe(originalContent);
       expect(mockProcessExit).not.toHaveBeenCalled();
     });
 
     it("should decrypt --file to --out file", async () => {
       const originalContent = "file content";
-      const subtle = await getSubtle();
-      const derivedKey = await getDerivedKey(subtle, secret, algorithm, parseInt(keyLength, 10), ["encrypt", "decrypt"]);
-      const encryptedFileContent = await encryptContent(
-        subtle,
-        derivedKey, // Use derivedKey here
-        algorithm,
-        originalContent
-      );
+      const cryptoService = new CryptoService();
+      await cryptoService.boot({
+        aesGcm: { length: parseInt(keyLength, 10) },
+        ivLength: parseInt(ivLength, 10),
+      });
+      const derivedKey = await cryptoService.deriveKeyFromSecret(secret);
+      const { key, salt } = cryptoService.extractKeyFromDerivedKey(derivedKey);
+      const { encryptedData, metadata } = await cryptoService.encryptPayload(originalContent, "test-key", key);
+      const encryptedJson = JSON.stringify({
+        encryptedData,
+        iv: metadata.iv,
+        keyId: metadata.keyId,
+        salt,
+      });
       const inFile = path.join(tempDir, "input.txt");
       const outFile = path.join(tempDir, "output.txt");
-      fs.writeFileSync(inFile, encryptedFileContent); // Create the actual encrypted input file
+      fs.writeFileSync(inFile, encryptedJson);
 
       await program.parseAsync(
         [
@@ -439,10 +503,10 @@ describe("Crypto CLI", () => {
           outFile,
           "--secret",
           secret,
-          "--alg",
-          algorithm,
           "--key-length",
           keyLength,
+          "--iv-length",
+          ivLength,
         ],
         { from: "user" }
       );
@@ -451,7 +515,7 @@ describe("Crypto CLI", () => {
       expect(mockLog).toHaveBeenCalledWith(
         expect.stringContaining(`Decrypted content written to ${outFile}.`)
       );
-      expect(fs.readFileSync(outFile, "utf8")).toBe(originalContent); // Verify actual file content
+      expect(fs.readFileSync(outFile, "utf8")).toBe(originalContent);
       expect(mockProcessExit).not.toHaveBeenCalled();
     });
 
@@ -493,14 +557,12 @@ describe("Crypto CLI", () => {
     });
 
     it("should exit with error on decryption failure", async () => {
-      // We will simply check that an error is logged and the process exits.
-      // We are no longer asserting a specific error message, as it was mock-dependent.
       await expect(
         program.parseAsync(
           [
             "decrypt",
             "--data",
-            Buffer.from("invalid-hex-data").toString("hex"), // Provide invalid hex data to trigger real error
+            "{}",
             "--secret",
             secret,
           ],

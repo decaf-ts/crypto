@@ -14,3 +14,5 @@ export * from "./util-types";
 export * from "./pbkdf2-types";
 export * from "./crypto-types";
 export * from "../version";
+export { getCrypto } from "./crypto";
+export { getSubtle } from "./subtle-crypto";

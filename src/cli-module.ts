@@ -2,9 +2,10 @@ import { Command } from "commander";
 import { Logging, Logger } from "@decaf-ts/logging";
 import fs from "fs";
 import path from "path";
-import { encryptContent, getDerivedKey, decryptContent } from "./common/utils";
-import { getSubtle } from "./common/crypto";
-import { Obfuscation } from "./node/Obfuscation"; // Import Obfuscation class
+import { getSubtle } from "./common/subtle-crypto";
+import { Obfuscation } from "./node/Obfuscation";
+import { CryptoService } from "./integration/services/CryptoService";
+import { InternalError } from "@decaf-ts/db-decorators";
 
 const logger = Logging.for("crypto-cli");
 
@@ -218,7 +219,7 @@ async function processTargets(
 
 /**
  * @description A command for encrypting data or file content.
- * @summary This command provides options to encrypt a string or the content of a file using a specified algorithm and secret. The output can be written to a file or printed to the console.
+ * @summary This command provides options to encrypt a string or the content of a file using AES-GCM with configurable key length and IV length. The output can be written to a file or printed to the console.
  * @command encrypt
  * @memberOf module:@decaf-ts/crypto
  */
@@ -231,19 +232,19 @@ const encryptCmd = new Command("encrypt")
   )
   .option("-s, --secret <string>", "REQUIRED: The encryption secret.")
   .option(
-    "-a, --alg <string>",
-    "The encryption algorithm name (e.g., AES-GCM).",
-    "AES-GCM"
-  )
-  .option(
     "-l, --key-length <number>",
-    "The key length in bits (e.g., 256 for AES-GCM).",
+    "AES key length in bits (128, 192, or 256).",
     "256"
   )
-  .description("Encrypts data or file content.")
+  .option(
+    "-i, --iv-length <number>",
+    "IV length in bytes (default 12 for AES-GCM).",
+    "12"
+  )
+  .description("Encrypts data or file content using AES-GCM.")
   .action(async (options: any) => {
     const log = logger.for("encrypt-command");
-    const { file, data, out, secret, alg, keyLength } = options;
+    const { file, data, out, secret, keyLength, ivLength } = options;
 
     if (!secret) {
       log.error("Error: --secret is required for encryption.");
@@ -260,39 +261,54 @@ const encryptCmd = new Command("encrypt")
       process.exit(1);
     }
 
+    const keyLengthNum = parseInt(keyLength, 10);
+    if (keyLengthNum !== 128 && keyLengthNum !== 192 && keyLengthNum !== 256) {
+      log.error("Error: Invalid key length. Must be 128, 192, or 256.");
+      process.exit(1);
+    }
+
     let contentToProcess: string;
     let outputPath: string | undefined;
 
     if (file) {
       contentToProcess = fs.readFileSync(file, "utf-8");
-      outputPath = out || file; // Default to in-place for files
+      outputPath = out || file;
     } else {
-      // data
       contentToProcess = data;
-      outputPath = out; // For data, 'out' is explicit, otherwise console
+      outputPath = out;
     }
 
     try {
-      const subtle = await getSubtle();
-      const encryptionKey = await getDerivedKey(
-        subtle,
-        secret,
-        alg,
-        parseInt(keyLength, 10),
-        ["encrypt", "decrypt"]
-      );
-      const encryptedHex = await encryptContent(
-        subtle,
-        encryptionKey,
-        alg,
-        contentToProcess
+      const cryptoService = new CryptoService();
+      await cryptoService.boot({
+        aesGcm: { length: keyLengthNum },
+        ivLength: parseInt(ivLength, 10),
+      });
+
+      // Derive key from secret using the service
+      const derivedKey = await cryptoService.deriveKeyFromSecret(secret);
+      const { key, salt } = cryptoService.extractKeyFromDerivedKey(derivedKey);
+
+      // Encrypt the content
+      const { encryptedData, metadata } = await cryptoService.encryptPayload(
+        contentToProcess,
+        "cli-encrypt",
+        key
       );
 
+      // Output includes IV and salt for decryption
+      const output = JSON.stringify({
+        encryptedData,
+        iv: metadata.iv,
+        keyId: metadata.keyId,
+        salt,
+      });
+
       if (outputPath) {
-        fs.writeFileSync(outputPath, encryptedHex);
+        fs.writeFileSync(outputPath, output);
         log.info(`Encrypted content written to ${outputPath}.`);
       } else {
-        console.log(encryptedHex);
+        console.log(output);
       }
     } catch (e: any) {
       log.error(`Encryption failed: ${e.message}`);
@@ -302,32 +318,32 @@ const encryptCmd = new Command("encrypt")
 
 /**
  * @description A command for decrypting data or file content.
- * @summary This command provides options to decrypt a hex string or the content of a file using a specified algorithm and secret. The output can be written to a file or printed to the console.
+ * @summary This command provides options to decrypt encrypted JSON data or the content of a file using AES-GCM with configurable key length and IV length. The output can be written to a file or printed to the console.
  * @command decrypt
  * @memberOf module:@decaf-ts/crypto
  */
 const decryptCmd = new Command("decrypt")
-  .option("-f, --file <string>", "Decrypt the content of a file.")
-  .option("-d, --data <string>", "Decrypt the provided hex string data.")
+  .option("-f, --file <string>", "Decrypt the content of a file (JSON format with encryptedData, iv).")
+  .option("-d, --data <string>", "Decrypt the provided JSON data (with encryptedData, iv).")
   .option(
     "-o, --out <string>",
     "Output path. If not provided, prints to console for --data, or decrypts in place for --file."
   )
   .option("-s, --secret <string>", "REQUIRED: The decryption secret.")
   .option(
-    "-a, --alg <string>",
-    "The decryption algorithm name (e.g., AES-GCM).",
-    "AES-GCM"
-  )
-  .option(
     "-l, --key-length <number>",
-    "The key length in bits (e.g., 256 for AES-GCM).",
+    "AES key length in bits (128, 192, or 256).",
     "256"
   )
-  .description("Decrypts data or file content.")
+  .option(
+    "-i, --iv-length <number>",
+    "IV length in bytes (default 12 for AES-GCM).",
+    "12"
+  )
+  .description("Decrypts data or file content using AES-GCM.")
   .action(async (options: any) => {
     const log = logger.for("decrypt-command");
-    const { file, data, out, secret, alg, keyLength } = options;
+    const { file, data, out, secret, keyLength, ivLength } = options;
 
     if (!secret) {
       log.error("Error: --secret is required for decryption.");
@@ -344,33 +360,49 @@ const decryptCmd = new Command("decrypt")
       process.exit(1);
     }
 
-    let contentToProcessHex: string;
+    const keyLengthNum = parseInt(keyLength, 10);
+    if (keyLengthNum !== 128 && keyLengthNum !== 192 && keyLengthNum !== 256) {
+      log.error("Error: Invalid key length. Must be 128, 192, or 256.");
+      process.exit(1);
+    }
+
+    let encryptedInput: string;
     let outputPath: string | undefined;
 
     if (file) {
-      contentToProcessHex = fs.readFileSync(file, "utf-8");
-      outputPath = out || file; // Default to in-place for files
+      encryptedInput = fs.readFileSync(file, "utf-8");
+      outputPath = out || file;
     } else {
-      // data
-      contentToProcessHex = data;
-      outputPath = out; // For data, 'out' is explicit, otherwise console
+      encryptedInput = data;
+      outputPath = out;
     }
 
     try {
-      const subtle = await getSubtle();
-      const decryptionKey = await getDerivedKey(
-        subtle,
-        secret,
-        alg,
-        parseInt(keyLength, 10),
-        ["encrypt", "decrypt"]
-      );
-      const decryptedContent = await decryptContent(
-        subtle,
-        decryptionKey,
-        alg,
-        contentToProcessHex
-      );
+      // Parse the encrypted JSON input
+      let parsed: { encryptedData: string; iv: string; keyId?: string; salt?: string };
+      try {
+        parsed = JSON.parse(encryptedInput);
+      } catch (e) {
+        throw new InternalError("Invalid encrypted data format. Expected JSON with encryptedData and iv fields.");
+      }
+
+      if (!parsed.encryptedData || !parsed.iv) {
+        throw new InternalError("Invalid encrypted data. Missing encryptedData or iv field.");
+      }
+
+      const cryptoService = new CryptoService();
+      await cryptoService.boot({
+        aesGcm: { length: parseInt(keyLength, 10) },
+        ivLength: parseInt(ivLength, 10),
+      });
+
+      // Derive key from secret using the salt from encryption
+      const salt = parsed.salt || undefined;
+      const derivedKey = await cryptoService.deriveKeyFromSecret(secret, salt);
+      const { key } = cryptoService.extractKeyFromDerivedKey(derivedKey);
+
+      // Decrypt the content
+      const decryptedContent = await cryptoService.decryptPayload(parsed.encryptedData, key);
 
       if (outputPath) {
         fs.writeFileSync(outputPath, decryptedContent);

@@ -26,6 +26,17 @@
       },
       "default": "./lib/esm/integration/index.js"
     },
+    "./integration/services": {
+      "import": {
+        "types": "./lib/types/integration/services/index.d.mts",
+        "default": "./lib/esm/integration/services/index.js"
+      },
+      "require": {
+        "types": "./lib/types/integration/services/index.d.cts",
+        "default": "./lib/cjs/integration/services/index.cjs"
+      },
+      "default": "./lib/esm/integration/services/index.js"
+    },
     "./node": {
       "import": {
         "types": "./lib/types/node/index.d.mts",

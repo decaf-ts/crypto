@@ -1,5 +1,5 @@
 import { SubtleCrypto } from "../../src/common/Subtle";
-import { getSubtle } from "../../src/common/crypto";
+import { getSubtle } from "../../src/common/subtle-crypto";
 import { CryptoKey } from "../../src/common/index";
 import { sign, verify } from "../../src/jwt/index";
 import {

@@ -16,9 +16,7 @@ import {
 import { ContextualArgs, Repo } from "@decaf-ts/core";
 import { Model } from "@decaf-ts/decorator-validation";
 import { CryptoError } from "./errors";
-import { getSubtle } from "../common/crypto";
-import { getCrypto } from "../common/crypto";
-import { SubtleCrypto } from "../common/Subtle"; // Explicitly import SubtleCrypto interface
+import { SubtleCrypto } from "../common/Subtle";
 import {
   AesCbcParams,
   AesCtrParams,
@@ -29,6 +27,8 @@ import {
   KeyUsage,
   Algorithm,
 } from "../common/index";
+import { getSubtle } from "../common/subtle-crypto";
+import { getCrypto } from "../common/crypto";
 
 /**
  * @description A function that returns a secret for encryption.
@@ -170,7 +170,8 @@ export const encryptOnCreate: GeneralOperationHandler<any, any, any> =
     ]);
 
     const dataToEncrypt = new TextEncoder().encode(JSON.stringify(model[key]));
-    const iv = ((await getCrypto()) as any).getRandomValues(new Uint8Array(12)); // Generate a random IV for AES-GCM
+    const crypto = await getCrypto();
+    const iv = (crypto as any).getRandomValues(new Uint8Array(12)); // Generate a random IV for AES-GCM
 
     const encryptedData = await subtle.encrypt(
       { name: (data.algorithm as Algorithm).name, iv: iv }, // Cast to Algorithm to access name
@@ -273,9 +274,8 @@ export const encryptOnUpdate: UpdateOperationHandler<any, any, any> =
 
     // Encrypt the current value (data changed, no old data, or no context flags)
     const currentUnencryptedValue = JSON.stringify(model[key]);
-    const newIv = ((await getCrypto()) as any).getRandomValues(
-      new Uint8Array(12)
-    );
+    const crypto = await getCrypto();
+    const newIv = (crypto as any).getRandomValues(new Uint8Array(12));
     const newDataToEncrypt = new TextEncoder().encode(currentUnencryptedValue);
 
     const newEncryptedData = await subtle.encrypt(

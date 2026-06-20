@@ -1,9 +1,8 @@
 import { model, Model, required } from "@decaf-ts/decorator-validation";
 import { pk, table, Repository } from "@decaf-ts/core";
-// @ts-expect-error paths
 import { RamAdapter } from "@decaf-ts/core/ram";
 import { encrypt } from "../../src/integration/decorators";
-import { getSubtle } from "../../src/common/crypto";
+import { getSubtle } from "../../src/common/subtle-crypto";
 import { uses } from "@decaf-ts/decoration";
 
 // exactly 32 bytes for AES-256 raw key import
