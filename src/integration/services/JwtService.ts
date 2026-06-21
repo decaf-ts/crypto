@@ -14,8 +14,6 @@ export type JwtOptions = {
 
 @description("Handles JWt operations")
 export class JwtService extends ClientBasedService<void, JwtOptions> {
-  private static enc = new TextEncoder();
-
   constructor() {
     super();
   }
@@ -26,7 +24,7 @@ export class JwtService extends ClientBasedService<void, JwtOptions> {
     const { log } = (
       await this.logCtx(args, PersistenceKeys.INITIALIZATION, true)
     ).for(this.initialize);
-    const cfg = args[0];
+    const cfg: JwtOptions = args[0];
     if (!cfg) throw new InternalError(`Missing configuration for JwtService`);
     log.verbose(`Loaded jwt secret. validity set to ${cfg.expiry}`);
     return {

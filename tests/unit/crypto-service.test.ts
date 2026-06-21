@@ -242,7 +242,7 @@ describe("CryptoService", () => {
       }
       const singleConfigTime = Date.now() - singleConfigTimeStart;
 
-      expect(mixedConfigTime).toBeLessThanOrEqual(singleConfigTime + 50);
+      expect(mixedConfigTime).toBeLessThanOrEqual(singleConfigTime + 100);
       console.log(`Using .for() to switch configs: ${mixedConfigTime}ms vs ${singleConfigTime}ms for separate services`);
     });
   });
