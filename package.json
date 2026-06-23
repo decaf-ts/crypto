@@ -26,16 +26,27 @@
       },
       "default": "./lib/esm/integration/index.js"
     },
-    "./integration/services": {
+    "./integration/services/crypto": {
       "import": {
-        "types": "./lib/types/integration/services/index.d.mts",
-        "default": "./lib/esm/integration/services/index.js"
+        "types": "./lib/types/integration/services/CryptoService.d.mts",
+        "default": "./lib/esm/integration/services/CryptoService.js"
       },
       "require": {
-        "types": "./lib/types/integration/services/index.d.cts",
-        "default": "./lib/cjs/integration/services/index.cjs"
+        "types": "./lib/types/integration/services/CryptoService.d.cts",
+        "default": "./lib/cjs/integration/services/CryptoService.cjs"
       },
-      "default": "./lib/esm/integration/services/index.js"
+      "default": "./lib/esm/integration/services/CryptoService.js"
+    },
+    "./integration/services/jwt": {
+      "import": {
+        "types": "./lib/types/integration/services/JwtService.d.mts",
+        "default": "./lib/esm/integration/services/JwtService.js"
+      },
+      "require": {
+        "types": "./lib/types/integration/services/JwtService.d.cts",
+        "default": "./lib/cjs/integration/services/JwtService.cjs"
+      },
+      "default": "./lib/esm/integration/services/JwtService.js"
     },
     "./node": {
       "import": {
