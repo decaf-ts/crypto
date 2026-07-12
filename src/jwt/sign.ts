@@ -1,5 +1,6 @@
 import { SignJWT } from "jose";
 import { JwtOptions } from "./types";
+import { InternalError } from "@decaf-ts/db-decorators";
 
 /**
  * @description Signs a JSON Web Token (JWT).
@@ -32,6 +33,9 @@ import { JwtOptions } from "./types";
  *   SignFunction-->>Client: Returns SignedJWT
  */
 export async function sign(obj: object, option: JwtOptions) {
+  if (!option.secret) {
+    throw new InternalError("Missing JWT secret");
+  }
   const key = new TextEncoder().encode(option.secret);
   // Add standard claims as needed (exp, iat, iss, aud, etc.)
   return await new SignJWT({ ...obj })

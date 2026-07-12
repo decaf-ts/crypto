@@ -8,6 +8,17 @@
  * @memberOf module:@decaf-ts/crypto/jwt
  */
 export type JwtOptions = {
-  secret: string;
+  secret?: string;
   expiry?: string;
+  verifyUrl?: string;
+  clockToleranceSeconds?: number;
 };
+
+export interface JwtClaims {
+  preferred_username?: string;
+  email?: string;
+  email_verified?: boolean;
+  name?: string;
+  given_name?: string;
+  family_name?: string;
+}
