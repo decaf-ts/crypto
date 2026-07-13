@@ -85,7 +85,7 @@
   "types": "./lib/types/index.d.mts",
   "main": "./lib/cjs/index.cjs",
   "bin": {
-    "decaf-crypto": "./lib/bin/cli.cjs"
+    "decaf-crypto": "./lib/cjs/bin/cli.cjs"
   },
   "browser": "./lib/esm/browser/index.js",
   "scripts": {
