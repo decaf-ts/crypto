@@ -85,7 +85,7 @@
   "types": "./lib/types/index.d.mts",
   "main": "./lib/cjs/index.cjs",
   "bin": {
-    "decaf-crypto": "./lib/cjs/bin/cli.cjs"
+    "decaf-crypto": "lib/cjs/bin/cli.cjs"
   },
   "browser": "./lib/esm/browser/index.js",
   "scripts": {
@@ -96,6 +96,7 @@
     "reset": "rm -rf * && git checkout . && git pull && npm run do-install",
     "build": "build-scripts --dev --buildMode build",
     "build:prod": "build-scripts --prod --buildMode build",
+    "postbuild:prod": "node ./bin/prepare-cli-bin.mjs",
     "test": "npm run test:all",
     "test:unit": "jest --testPathPatterns=\"/tests/unit\" --passWithNoTests --detectOpenHandles",
     "test:integration": "jest --testPathPatterns=\"/tests/(integration)\" --passWithNoTests --detectOpenHandles",
