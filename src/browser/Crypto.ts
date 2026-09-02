@@ -11,7 +11,7 @@ if (!(globalThis as any).window || !(globalThis as any).window.crypto)
  *
  * An error is thrown if the code is not running in a browser environment that supports `window.crypto`.
  * @const {object} Crypto
- * @type {{getRandomValues<T extends ArrayBufferView>(array: T): T; randomUUID(): string;}}
+ * @type {object}
  * @memberOf module:@decaf-ts/crypto/browser
  */
 export const Crypto = (globalThis as any).window.crypto as {

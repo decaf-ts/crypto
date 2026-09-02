@@ -93,7 +93,7 @@ async function getCryptoSecret<M extends Model>(
  * @summary This function uses `subtle.importKey` to create a `CryptoKey` from a raw secret string.
  * @param {SubtleCrypto} subtle - The `SubtleCrypto` implementation to use.
  * @param {string} secret - The secret string to derive the key from.
- * @param {CryptoMeta["algorithm"]} algorithm - The algorithm to use for the key.
+ * @param algorithm - The algorithm to use for the key.
  * @param {KeyUsage[]} keyUsages - The allowed usages for the new key.
  * @returns {Promise<CryptoKey>} A promise that resolves to the derived `CryptoKey`.
  * @function getDerivedKey
