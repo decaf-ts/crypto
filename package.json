@@ -104,6 +104,7 @@
     "test:dist": "TEST_TARGET=lib npm run test:all && TEST_TARGET=dist npm run test:all",
     "test:circular": "dpdm -T --no-warning --no-tree ./src/index.ts",
     "test:fuzz": "npm run test:all -- --testRegex='/tests/.*\\.fuzz\\.ts' --passWithNoTests",
+    "prepare-it-tests": "echo \"prepare-it-tests: no infra to boot\"",
     "coverage": "rimraf ./workdocs/reports/data/*.json && npm run test:all -- --coverage --config=./workdocs/reports/jest.coverage.config.cjs",
     "lint": "eslint .",
     "lint-fix": "eslint --fix .",
