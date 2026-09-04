@@ -39,9 +39,7 @@ export class CryptoService extends ClientBasedService<typeof Crypto, CryptoServi
     const { log } = (
       await this.logCtx(args, PersistenceKeys.INITIALIZATION, true)
     ).for(this.initialize);
-    const cfg = (args[0] as CryptoServiceConfig) || {};
-    if (!cfg)
-      throw new InternalError(`Missing configuration for CryptoService`);
+    const cfg = (args[0] as CryptoServiceConfig | undefined) ?? {};
     const client = await getCrypto();
     log.verbose(`Loaded crypto`);
     return Promise.resolve({ config: cfg, client: client as typeof Crypto });

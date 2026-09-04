@@ -29,7 +29,7 @@ Changing:
 
 ### Installation
 
-Run `npm install` (or `npm run do-install` if you have private dependencies and a `.token` file) to install the dependencies:
+Run `npm install` (or `npm run do-install` if you have private dependencies - it resolves the npm token via `decaf utils credentials`) to install the dependencies:
 
 If this is the first time you are running this command, it will also (according to your choices:
 
@@ -95,6 +95,7 @@ All automated test scripts live in `package.json`:
 - `test:all` – executes the entire Jest test suite under `tests`.
 - `test:dist` – runs the full suite twice, once against the compiled `lib` output and once against the `dist` bundle (via the `TEST_TARGET` environment variable).
 - `test:circular` – checks the source for circular dependencies using `dpdm`.
+- `prepare-it-tests` – no-op hook called by the shared CI workflows (`npm run prepare-it-tests --if-present`) before any test/coverage run; repositories whose integration tests need backing infrastructure implement it to boot that infra.
 - `coverage` – wipes previous coverage JSON files and runs the full test suite with the coverage-specific Jest config to emit reports and badges.
 
 ## Linting
@@ -181,7 +182,7 @@ The template comes with ci/cd for :
 
 This repository automates releases in the following manner:
 
-- run `./bin/tag-release.sh <version> <message>` (arguments are optional):
+- run `decaf utils tag-release --tag <version> --message <message>` (arguments are optional):
   - if arguments are missing, you will be prompted for them;
 - it will run `npm run prepare-pr` to ensure documentation, tests, and coverage are up to date;
 - it will commit all changes if needed;
@@ -206,7 +207,7 @@ Where:
 
 ### Publishing
 
-Unless the `-no-ci` flag is passed in the commit message when running `./bin/tag-release.sh`, publishing will be handled
+Unless the `-no-ci` flag is passed in the commit message when running `decaf utils tag-release`, publishing will be handled
 automatically by github/gitlab (triggered by the tag).
 
 When the `-no-ci` flag is passed then you can:
@@ -214,7 +215,7 @@ When the `-no-ci` flag is passed then you can:
 - run `npm publish`. This command assumes :
   - you have previously run the release script and tagged the repository;
   - you have you publishing properly configured in `npmrc` and `package.json`;
-  - The token for any special access required is stored in the `.token` file;
+  - The token for any special access required is resolved via `decaf utils credentials`;
 
 ### AI
 

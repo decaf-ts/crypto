@@ -12,21 +12,28 @@
   "package": "package.json",
   "recurseDepth": 10,
   "source": {
-    "include": ["./src"],
-    "exclude": ["cli.(ts|js)"],
+    "include": [
+      "./src"
+    ],
+    "exclude": [
+      "cli.(ts|js)"
+    ],
     "includePattern": "\\.(jsx|js|ts|tsx)$"
   },
   "tags": {
     "allowUnknownTags": true,
-    "dictionaries": ["jsdoc", "closure"]
+    "dictionaries": [
+      "jsdoc",
+      "closure"
+    ]
   },
   "templates": {
     "default": {
       "useLongnameInNav": false
     },
     "better-docs": {
-      "name": "crypto",
-      "title": "@decaf-ts/crypto",
+      "name": "ts-template",
+      "title": "TypeScript workspace template",
       "hideGenerator": true,
       "useLongnameInNav": false,
       "navLinks": [
