@@ -48,6 +48,18 @@ export class JwtService extends ClientBasedService<void, JwtOptions> {
     super();
   }
 
+  /**
+   * @description Initializes the JWT service configuration.
+   * @summary
+   * Loads the JWT configuration by merging env-read defaults with an explicit
+   * config object (the explicit config wins). Env vars are read for
+   * <code>secret</code>, <code>expiry</code>, <code>verifyUrl</code>, and
+   * <code>clockToleranceSeconds</code>. Note that env parsing can never set
+   * <code>allowDecodeOnly</code>: decode-only mode is a code-level opt-in only
+   * and triggers a startup security warning when enabled.
+   * @param {MaybeContextualArg<any>} args - Optional explicit JWT config object.
+   * @returns {Promise<{ config: JwtOptions; client: void }>} The resolved JWT configuration.
+   */
   async initialize(
     ...args: MaybeContextualArg<any>
   ): Promise<{ config: JwtOptions; client: void }> {
@@ -63,7 +75,14 @@ export class JwtService extends ClientBasedService<void, JwtOptions> {
       ? `verifyUrl=${cfg.verifyUrl}`
       : cfg.secret
         ? "local decode/HS256"
-        : "decode-only";
+        : cfg.allowDecodeOnly
+          ? "decode-only (explicit)"
+          : "decode-only";
+    if (cfg.allowDecodeOnly === true) {
+      log.warn(
+        "JWT signatures are NOT verified: decode-only mode is enabled (allowDecodeOnly=true)"
+      );
+    }
     log.verbose(
       `Loaded jwt configuration (${mode}${cfg.expiry ? `, expiry=${cfg.expiry}` : ""})`
     );

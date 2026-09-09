@@ -56,6 +56,30 @@ export function getUser(token: string): JwtClaims | undefined {
   };
 }
 
+/**
+ * @description Verifies a JSON Web Token (JWT) and returns its verified payload.
+ * @summary
+ * This is the core verification routine. It applies a three-tier strategy, in
+ * order of precedence:
+ * <ol>
+ *   <li>When <code>option.verifyUrl</code> is set, verifies the token signature
+ *       against a remote JWKS endpoint (via jose's <code>createRemoteJWKSet</code>).</li>
+ *   <li>Otherwise, when <code>option.secret</code> is set, verifies the token
+ *       signature using HS256 with the provided secret, honoring
+ *       <code>option.clockToleranceSeconds</code> if present.</li>
+ *   <li>Otherwise, when <code>option.allowDecodeOnly === true</code>, decodes the
+ *       payload without verifying the signature. This is an explicit opt-in escape
+ *       hatch. If none of the above apply, an <code>InternalError</code> is thrown
+ *       because JWT verification is not configured.</li>
+ * </ol>
+ * @param {string} token - The JSON Web Token to verify.
+ * @param {JwtOptions} option - Options controlling JWT verification: the JWKS URL, secret, clock tolerance, and decode-only escape hatch.
+ * @returns {Promise<OBJ>} A promise that resolves to the verified JWT payload object.
+ * @throws {AuthorizationError} If the token is invalid, malformed, or its signature cannot be verified.
+ * @throws {InternalError} If no verification configuration is present and decode-only is not explicitly allowed.
+ * @function verifyJwt
+ * @memberOf module:@decaf-ts/crypto/jwt
+ */
 export async function verifyJwt<OBJ extends object = object>(
   token: string,
   option: JwtOptions
@@ -79,6 +103,9 @@ export async function verifyJwt<OBJ extends object = object>(
     try {
       const { payload } = await jwtVerify(token, secretKey(option), {
         algorithms: ["HS256"],
+        clockTolerance: option.clockToleranceSeconds
+          ? `${option.clockToleranceSeconds}s`
+          : undefined,
       });
       return payload as unknown as OBJ;
     } catch (error) {
@@ -88,15 +115,35 @@ export async function verifyJwt<OBJ extends object = object>(
     }
   }
 
-  const payload = decodeJwtPayload<OBJ>(token);
-  if (!payload) throw new AuthorizationError("Invalid token");
-  return payload;
+  if (option.allowDecodeOnly) {
+    const payload = decodeJwtPayload<OBJ>(token);
+    if (!payload) throw new AuthorizationError("Invalid token");
+    return payload;
+  }
+
+  throw new InternalError(
+    "JWT verification is not configured: set a secret or verifyUrl (or explicitly allow decode-only)"
+  );
 }
 
 /**
  * @description Verifies a JSON Web Token (JWT).
- * @summary Verifies using a configured JWKS endpoint when provided, otherwise falls back
- * to symmetric HS256 verification or decode-only mode when no verification config exists.
+ * @summary
+ * Verifies a JWT using a three-tier strategy. When <code>option.verifyUrl</code> is
+ * set, the token is verified against a remote JWKS endpoint. Otherwise, when
+ * <code>option.secret</code> is set, the token is verified with HS256 honoring
+ * <code>option.clockToleranceSeconds</code>. If neither is configured, the token is
+ * decoded without verifying its signature <strong>only</strong> when
+ * <code>option.allowDecodeOnly === true</code>; otherwise an <code>InternalError</code>
+ * is thrown because JWT verification is not configured. This is a thin wrapper
+ * around {@link module:@decaf-ts/crypto/jwt.verifyJwt|verifyJwt}.
+ * @param {string} token - The JSON Web Token to verify.
+ * @param {JwtOptions} option - Options controlling JWT verification, including the JWKS URL, secret, clock tolerance, and decode-only escape hatch.
+ * @returns {Promise<OBJ>} A promise that resolves to the verified JWT payload object.
+ * @throws {AuthorizationError} If the token is invalid, malformed, or its signature cannot be verified.
+ * @throws {InternalError} If no verification configuration is present and decode-only is not explicitly allowed.
+ * @function verify
+ * @memberOf module:@decaf-ts/crypto/jwt
  */
 export async function verify<OBJ extends object = object>(
   token: string,
