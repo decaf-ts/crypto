@@ -11,6 +11,25 @@ import { getSubtle } from "../../common/subtle-crypto";
 import { InternalError } from "@decaf-ts/db-decorators";
 
 
+export interface Pbkdf2PolicyConfig {
+  /**
+   * Pinned default iteration count for the PBKDF2 policy.
+   * @default 150_000
+   */
+  iterations?: number;
+  /**
+   * Pinned hash algorithm for the PBKDF2 policy.
+   * @default "sha256"
+   */
+  hash?: string;
+  /**
+   * Minimum iteration count considered safe under the policy. When a hash is
+   * produced or verified with fewer iterations, a warning is surfaced.
+   * @default 100_000
+   */
+  minIterations?: number;
+}
+
 export interface CryptoServiceConfig {
   /**
    * AES-GCM algorithm configuration
@@ -22,10 +41,18 @@ export interface CryptoServiceConfig {
    * @default 12 (96 bits - recommended for GCM)
    */
   ivLength?: number;
+  /**
+   * PBKDF2 parameter policy. Values are pinned here so callers who do not
+   * override them always derive/verify with the configured safe defaults.
+   */
+  pbkdf2?: Pbkdf2PolicyConfig;
 }
 
 const DEFAULT_AES_GCM = { length: 256 } as const;
 const DEFAULT_IV_LENGTH = 12;
+const DEFAULT_PBKDF2_ITERATIONS = 150_000;
+const DEFAULT_PBKDF2_HASH = "sha256";
+const DEFAULT_PBKDF2_MIN_ITERATIONS = 100_000;
 
 @description("Secure cryptographic operations service")
 export class CryptoService extends ClientBasedService<typeof Crypto, CryptoServiceConfig> {
@@ -59,6 +86,31 @@ export class CryptoService extends ClientBasedService<typeof Crypto, CryptoServi
     return this.config.ivLength ?? DEFAULT_IV_LENGTH;
   }
 
+  /**
+   * Get the pinned PBKDF2 parameter policy.
+   */
+  protected get pbkdf2Policy(): Required<Pbkdf2PolicyConfig> {
+    const policy = this.config.pbkdf2 ?? {};
+    return {
+      iterations: policy.iterations ?? DEFAULT_PBKDF2_ITERATIONS,
+      hash: policy.hash ?? DEFAULT_PBKDF2_HASH,
+      minIterations: policy.minIterations ?? DEFAULT_PBKDF2_MIN_ITERATIONS,
+    };
+  }
+
+  /**
+   * Surface a warning when the given iteration count is below the pinned policy
+   * minimum. Logging goes through the service ctx logger.
+   */
+  protected warnIfBelowPolicy(iterations: number): void {
+    const { minIterations, iterations: pinned } = this.pbkdf2Policy;
+    if (iterations < minIterations) {
+      this.log.warn(
+        `PBKDF2 iteration count ${iterations} is below the pinned policy minimum of ${minIterations} (policy default ${pinned}). Use at least ${minIterations} iterations.`
+      );
+    }
+  }
+
   protected genSalt(bytes = 16): Buffer {
     return this.client.randomBytes(bytes);
   }
@@ -72,17 +124,18 @@ export class CryptoService extends ClientBasedService<typeof Crypto, CryptoServi
    */
   async pbkdf2Hash(
     password: string,
-    iterations = 150_000,
+    iterations = this.pbkdf2Policy.iterations,
     dkLen = 32,
     salt?: Buffer
   ): Promise<Pbkdf2Hash> {
+    this.warnIfBelowPolicy(iterations);
     const saltBuf = salt ?? this.genSalt(16);
     const hash = this.client.pbkdf2Sync(
       password,
       saltBuf,
       iterations,
       dkLen,
-      "sha256"
+      this.pbkdf2Policy.hash
     );
     return {
       saltB64: saltBuf.toString("base64"),
@@ -93,13 +146,14 @@ export class CryptoService extends ClientBasedService<typeof Crypto, CryptoServi
   }
 
   verifyPbkdf2(password: string, rec: Pbkdf2Hash): boolean {
+    this.warnIfBelowPolicy(rec.iterations);
     const salt = Buffer.from(rec.saltB64, "base64");
     const hash = this.client.pbkdf2Sync(
       password,
       salt,
       rec.iterations,
       rec.dkLen,
-      "sha256"
+      this.pbkdf2Policy.hash
     );
     const stored = Buffer.from(rec.hashB64, "base64");
     if (stored.length !== hash.length) return false;
@@ -109,6 +163,10 @@ export class CryptoService extends ClientBasedService<typeof Crypto, CryptoServi
   /**
    * Derive a key from a secret string using PBKDF2.
    * Returns salt + key combined as base64 string.
+   *
+   * NOTE: this keeps the historical 100_000-iteration default rather than the
+   * policy default so previously-derived keys (and any ciphertext derived from
+   * them) remain decryptable. The hash algorithm follows the pinned policy.
    * @param secret the secret string to derive key from
    * @param salt optional base64-encoded salt
    * @returns base64-encoded salt + key combination
@@ -120,7 +178,7 @@ export class CryptoService extends ClientBasedService<typeof Crypto, CryptoServi
       saltBuffer,
       100_000,
       32,
-      "sha256"
+      this.pbkdf2Policy.hash
     );
     return Buffer.concat([saltBuffer, key]).toString("base64");
   }
