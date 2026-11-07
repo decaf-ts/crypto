@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { model, Model, required } from "@decaf-ts/decorator-validation";
 import { pk, table, Repository } from "@decaf-ts/core";
 import { RamAdapter } from "@decaf-ts/core/ram";

@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { CryptoService } from "../../src/integration/services/CryptoService";
 
 describe("CryptoService PBKDF2 policy pinning (PR-3)", () => {

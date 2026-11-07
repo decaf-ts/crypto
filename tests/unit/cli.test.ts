@@ -1,3 +1,4 @@
+import { it } from "@decaf-ts/for-testing";
 import { Command } from "commander";
 import createCliProgram from "../../src/cli-module";
 import * as os from "os";
