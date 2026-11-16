@@ -58,7 +58,7 @@ export class JwtService extends ClientBasedService<void, JwtOptions> {
    * <code>allowDecodeOnly</code>: decode-only mode is a code-level opt-in only
    * and triggers a startup security warning when enabled.
    * @param {MaybeContextualArg<any>} args - Optional explicit JWT config object.
-   * @returns {Promise<{ config: JwtOptions; client: void }>} The resolved JWT configuration.
+   * @returns {Promise<{config: JwtOptions, client: void}>} The resolved JWT configuration.
    */
   async initialize(
     ...args: MaybeContextualArg<any>
